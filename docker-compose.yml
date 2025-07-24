@@ -53,7 +53,7 @@ services:
       - JENKINS_USER=admin
       - JENKINS_TOKEN=admin
       - NGROK_URL=https://e0cb1b61cd4d.ngrok-free.app
-      - GITHUB_TOKEN=${GITHUB_TOKEN}
+
     depends_on:
       postgres:
         condition: service_healthy
