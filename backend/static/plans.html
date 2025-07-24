@@ -1,0 +1,1314 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TestOps - Plans</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f7fa;
+            min-height: 100vh;
+        }
+        .header {
+            background: white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .nav-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 70px;
+        }
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .nav-menu {
+            display: flex;
+            gap: 5px;
+        }
+        .nav-item {
+            padding: 12px 20px;
+            border-radius: 8px;
+            text-decoration: none;
+            color: #666;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .nav-item:hover {
+            background: #f0f2f5;
+            color: #333;
+        }
+        .nav-item.active {
+            background: #667eea;
+            color: white;
+        }
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .user-details {
+            text-align: right;
+        }
+        .user-name {
+            font-weight: 600;
+            color: #333;
+            font-size: 14px;
+        }
+        .user-role {
+            font-size: 12px;
+            color: #666;
+        }
+        .logout-btn {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.3s ease;
+        }
+        .logout-btn:hover {
+            background: #c82333;
+        }
+        .main-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 30px 20px;
+        }
+        .page-title {
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 2em;
+            font-weight: 600;
+        }
+        .controls {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr auto;
+            gap: 20px;
+            align-items: end;
+        }
+        
+        .form-row-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            align-items: start;
+            margin-top: 20px;
+        }
+        
+        .form-actions {
+            margin-top: 0;
+            text-align: right;
+        }
+        
+        .form-actions .btn {
+            height: 45px;
+            margin-top: 20px;
+        }
+        
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .form-group label {
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .form-group input, .form-group select, .form-group textarea {
+            padding: 12px;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+        
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #5a6fd8;
+            transform: translateY(-2px);
+        }
+        .controls select, .controls button {
+            padding: 12px;
+            border-radius: 8px;
+            border: 2px solid #e1e5e9;
+            font-size: 16px;
+        }
+        .controls button {
+            background: #667eea;
+            color: white;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .controls button:hover {
+            background: #5a6fd8;
+        }
+        .btn-add {
+            background: #28a745 !important;
+        }
+        .btn-add:hover {
+            background: #218838 !important;
+        }
+        .executions-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            overflow: hidden;
+            font-size: 13px;
+            min-width: 1200px;
+        }
+        .executions-table th, .executions-table td {
+            padding: 12px 8px;
+            text-align: left;
+            vertical-align: middle;
+            white-space: nowrap;
+        }
+        
+        .executions-table th {
+            white-space: nowrap;
+        }
+        
+        .executions-table td {
+            max-width: 150px;
+            word-wrap: break-word;
+        }
+        
+        .executions-table td.description-col {
+            max-width: 250px;
+            min-width: 150px;
+            word-wrap: break-word;
+            white-space: normal;
+        }
+        
+        .executions-table td.name-col {
+            max-width: 120px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .executions-table td.jenkins-col {
+            max-width: 120px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .executions-table td.actions-col {
+            min-width: 280px;
+            white-space: nowrap;
+            text-align: center;
+        }
+        .executions-table th {
+            background: #f0f2f5;
+            color: #333;
+            font-weight: 600;
+        }
+        .executions-table tr:not(:last-child) {
+            border-bottom: 1px solid #e1e5e9;
+        }
+        .executions-table td {
+            color: #555;
+        }
+        .execution-status {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .status-pending {
+            background: #fff3cd;
+            color: #856404;
+        }
+        .status-running {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+        .status-completed {
+            background: #d4edda;
+            color: #155724;
+        }
+        .status-failed {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .status-cancelled {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .status-initialized {
+            background: #e2e3e5;
+            color: #383d41;
+        }
+        .status-scheduled {
+            background: #cce5ff;
+            color: #004085;
+        }
+        .action-btn {
+            padding: 6px 12px;
+            border-radius: 6px;
+            border: none;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-right: 4px;
+            transition: all 0.3s ease;
+        }
+        .btn-run {
+            background: #17a2b8;
+            color: white;
+        }
+        .btn-run:hover {
+            background: #138496;
+        }
+        .btn-stop {
+            background: #6c757d;
+            color: white;
+        }
+        .btn-stop:hover {
+            background: #5a6268;
+        }
+        .btn-edit {
+            background: #ffc107;
+            color: #333;
+        }
+        .btn-edit:hover {
+            background: #e0a800;
+        }
+        .btn-delete {
+            background: #dc3545;
+            color: white;
+        }
+        .btn-delete:hover {
+            background: #c82333;
+        }
+        .empty-state {
+            text-align: center;
+            color: #888;
+            padding: 60px 20px;
+        }
+        
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+        }
+        
+        .modal-content {
+            background-color: white;
+            margin: 5% auto;
+            padding: 0;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            animation: modalSlideIn 0.3s ease;
+        }
+        
+        @keyframes modalSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .modal-header {
+            padding: 20px 30px;
+            border-bottom: 1px solid #e1e5e9;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .modal-header h3 {
+            margin: 0;
+            color: #333;
+            font-size: 1.5em;
+        }
+        
+        .close {
+            color: #aaa;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: color 0.3s ease;
+        }
+        
+        .close:hover {
+            color: #333;
+        }
+        
+        .modal-body {
+            padding: 30px;
+        }
+        
+        .modal .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .modal .form-group label {
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+            font-size: 14px;
+        }
+        
+        .modal .form-group input,
+        .modal .form-group select,
+        .modal .form-group textarea {
+            padding: 12px;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        
+        .modal .form-group input:focus,
+        .modal .form-group select:focus,
+        .modal .form-group textarea:focus {
+            border-color: #667eea;
+            outline: none;
+        }
+        
+        .modal .btn {
+            padding: 12px 24px;
+            border-radius: 8px;
+            border: none;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-left: 10px;
+        }
+        
+        .modal .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .modal .btn-secondary:hover {
+            background: #5a6268;
+        }
+        
+        .modal .btn-success {
+            background: #28a745;
+            color: white;
+        }
+        
+        .modal .btn-success:hover {
+            background: #218838;
+        }
+        
+        @media (max-width: 768px) {
+            .main-container { padding: 10px; }
+            .modal-content { width: 98%; margin: 10% auto; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="nav-container">
+            <div class="logo">🚀 TestOps</div>
+            <nav class="nav-menu">
+                <a href="/" class="nav-item">📊 Dashboard</a>
+                <a href="/projects" class="nav-item">📁 Projects</a>
+                <a href="/tests" class="nav-item">🧪 Tests</a>
+                <a href="/executions" class="nav-item">▶️ Executions</a>
+                <a href="/plans" class="nav-item active">📋 Plans</a>
+                <a href="/cicd" class="nav-item">🔄 CI/CD</a>
+                <a href="/reports" class="nav-item">📈 Reports</a>
+                <a href="/logs" class="nav-item">📝 Logs</a>
+            </nav>
+            <div class="user-info">
+                <div class="user-details">
+                    <div class="user-name" id="userName">Loading...</div>
+                    <div class="user-role">Administrator</div>
+                </div>
+                <button class="logout-btn">🚪 Logout</button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="main-container">
+        <div class="page-title">📋 Quản lý Test Plans (Thực thi theo lịch)</div>
+        
+        <div class="controls">
+            <div style="margin-bottom: 20px;">
+                <label for="projectSelect" style="font-weight: 600; color: #333; margin-right: 10px;">Chọn dự án:</label>
+                <select id="projectSelect" style="padding: 8px 12px; border: 2px solid #e1e5e9; border-radius: 8px; font-size: 14px; min-width: 200px;"></select>
+            </div>
+            <form id="planForm">
+                <div class="form-row" style="grid-template-columns: 1.2fr 2fr 1fr 1.5fr auto; gap: 20px; align-items: start;">
+                    <div class="form-group">
+                        <label for="planName">Tên Plan</label>
+                        <input type="text" id="planName" name="plan_name" placeholder="Tên kế hoạch" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="planDescription">Mô tả</label>
+                        <textarea id="planDescription" name="description" placeholder="Mô tả chi tiết về plan" rows="1" style="resize: none; min-height: 45px; padding: 12px; box-sizing: border-box; border: 2px solid #e1e5e9; border-radius: 8px; font-size: 14px; transition: border-color 0.3s ease;"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="jenkinsJob">Jenkins Job</label>
+                        <select id="jenkinsJob" name="jenkins_job" required>
+                            <option value="">Đang tải danh sách jobs...</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="scheduleTime">Cron Schedule</label>
+                        <input type="text" id="scheduleTime" name="schedule_time" placeholder="0 9 * * 1-5" required style="font-family: monospace;">
+                        <small style="color: #666; font-size: 11px; margin-top: 4px; display: block;">
+                            Format: "phút giờ ngày tháng thứ" (VD: 0 9 * * 1-5 = 9h sáng thứ 2-6)
+                        </small>
+                    </div>
+                    <div class="form-actions" style="margin-top: 0; align-self: start;">
+                        <button type="submit" class="btn btn-primary" style="width: 100%; min-width: 120px; height: 45px;">➕ Thêm Plan</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+        <div id="plansContainer">
+            <div class="empty-state">Vui lòng chọn dự án để xem danh sách plans.</div>
+        </div>
+    </div>
+    <!-- Modal Sửa Plan -->
+    <div id="editModal" class="modal" style="display: none;">
+        <div class="modal-content" style="max-width: 600px;">
+            <div class="modal-header">
+                <h3>✏️ Sửa Plan</h3>
+                <span class="close" onclick="closeEditModal()">&times;</span>
+            </div>
+            <div class="modal-body">
+                <form id="editPlanForm">
+                    <div class="form-row" style="grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+                        <div class="form-group">
+                            <label for="editPlanName">Tên Plan</label>
+                            <input type="text" id="editPlanName" name="plan_name" placeholder="Tên kế hoạch" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="editProjectId">Dự án</label>
+                            <select id="editProjectId" name="project_id" required>
+                                <option value="">Chọn dự án</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row" style="grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+                        <div class="form-group">
+                            <label for="editJenkinsJob">Jenkins Job</label>
+                            <select id="editJenkinsJob" name="jenkins_job" required>
+                                <option value="">Đang tải danh sách jobs...</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="editScheduleTime">Cron Schedule</label>
+                            <input type="text" id="editScheduleTime" name="schedule_time" placeholder="0 9 * * 1-5" required style="font-family: monospace;">
+                        </div>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 20px;">
+                        <label for="editPlanDescription">Mô tả</label>
+                        <textarea id="editPlanDescription" name="description" placeholder="Mô tả chi tiết về plan" rows="3"></textarea>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 20px;">
+                        <small style="color: #666; font-size: 11px; margin-top: 4px; display: block;">
+                            Format Cron: "phút giờ ngày tháng thứ" (VD: 0 9 * * 1-5 = 9h sáng thứ 2-6)
+                        </small>
+                    </div>
+                    <div class="form-actions" style="text-align: right;">
+                        <button type="button" class="btn btn-secondary" onclick="closeEditModal()">❌ Hủy</button>
+                        <button type="submit" class="btn btn-success">💾 Lưu thay đổi</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <script>
+        const API_BASE = '/api';
+        const PLANS_API = `${API_BASE}/plans`;
+        const PROJECTS_API = `${API_BASE}/projects`;
+        
+        let plans = [];
+        let projects = [];
+        let currentProjectId = null;
+        let currentEditingPlan = null;
+        
+        // Load projects for dropdown
+        async function loadProjects() {
+            try {
+                const response = await fetch(`${PLANS_API}/projects`);
+                if (response.ok) {
+                    const data = await response.json();
+                    projects = data.projects || [];
+                    renderProjectOptions();
+                } else {
+                    throw new Error('Failed to load projects');
+                }
+            } catch (error) {
+                console.error('Error loading projects:', error);
+                document.getElementById('plansContainer').innerHTML = `<div class="loading"><p>❌ Lỗi tải dự án</p></div>`;
+            }
+        }
+        
+        // Render project options in select
+        function renderProjectOptions() {
+            const select = document.getElementById('projectSelect');
+            select.innerHTML = '<option value="">-- Tất cả dự án --</option>' +
+                projects.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+            loadAllPlans();
+            select.onchange = function() {
+                const projectId = this.value;
+                if (projectId) {
+                    currentProjectId = projectId;
+                    loadPlansByProject(projectId);
+                } else {
+                    currentProjectId = null;
+                    loadAllPlans();
+                }
+            };
+        }
+        
+        // Load plans by project
+        async function loadPlansByProject(projectId) {
+            if (!projectId) {
+                document.getElementById('plansContainer').innerHTML = '<div class="empty-state">Vui lòng chọn dự án để xem danh sách plans.</div>';
+                return;
+            }
+            try {
+                const response = await fetch(`${PLANS_API}/project/${projectId}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    plans = data.plans || [];
+                    renderPlans(data);
+                } else {
+                    const errorText = await response.text();
+                    throw new Error(`HTTP ${response.status}: ${errorText}`);
+                }
+            } catch (error) {
+                console.error('Error loading plans:', error);
+                document.getElementById('plansContainer').innerHTML = `<div class="loading"><p>❌ Lỗi tải plans: ${error.message}</p></div>`;
+            }
+        }
+        
+        // Load all plans
+        async function loadAllPlans() {
+            try {
+                const response = await fetch(PLANS_API);
+                if (response.ok) {
+                    const data = await response.json();
+                    plans = data.plans || [];
+                    renderAllPlans(data);
+                } else {
+                    const errorText = await response.text();
+                    throw new Error(`HTTP ${response.status}: ${errorText}`);
+                }
+            } catch (error) {
+                console.error('Error loading all plans:', error);
+                document.getElementById('plansContainer').innerHTML = `<div class="loading"><p>❌ Lỗi tải plans: ${error.message}</p></div>`;
+            }
+        }
+        
+        // Render plans
+        function renderPlans(data) {
+            const container = document.getElementById('plansContainer');
+            const currentProject = projects.find(p => p.id == currentProjectId);
+            if (!data || !currentProject) {
+                container.innerHTML = '<div class="loading"><p>❌ Lỗi: Không thể tải thông tin dự án</p></div>';
+                return;
+            }
+            if (!plans.length) {
+                container.innerHTML = `<div class="empty-state"><p>📁 Dự án: <strong>${currentProject.name}</strong></p><p>Chưa có plan nào cho dự án này.</p></div>`;
+                return;
+            }
+            container.innerHTML = `
+                <div class="project-info" style="background: white; border-radius: 15px; padding: 25px; margin-bottom: 25px; box-shadow: 0 5px 15px rgba(0,0,0,0.08);">
+                    <h3>📁 ${currentProject.name}</h3>
+                    <p>Tổng số plans: <span style="background: #667eea; color: white; padding: 4px 12px; border-radius: 20px; font-weight: 600;">${data.count}</span></p>
+                </div>
+                <div style="overflow-x: auto;">
+                    <table class="executions-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Tên Plan</th>
+                                <th>Dự án</th>
+                                <th>Mô tả</th>
+                                <th>Jenkins Job</th>
+                                <th>Cron Schedule</th>
+                                <th>Trạng thái</th>
+                                <th>Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${plans.map(plan => `
+                                <tr>
+                                    <td><code style="background: #e8f5e8; color: #2e7d32; padding: 2px 6px; border-radius: 4px; font-size: 12px; font-weight: 600;">${plan.plan_id || '-'}</code></td>
+                                    <td class="name-col"><strong>${plan.plan_name || '-'}</strong></td>
+                                    <td><span style="background: #e3f2fd; color: #1976d2; padding: 4px 8px; border-radius: 12px; font-size: 12px; font-weight: 500;">${plan.project_name || '-'}</span></td>
+                                    <td class="description-col">${plan.description || '-'}</td>
+                                    <td class="jenkins-col"><code style="background: #f8f9fa; padding: 2px 6px; border-radius: 4px; font-size: 12px;">${plan.jenkins_job || '-'}</code></td>
+                                    <td>${formatDateTime(plan.schedule_time)}</td>
+                                    <td><span class="execution-status status-${plan.status || 'pending'}">${getStatusText(plan.status)}</span></td>
+                                    <td class="actions-col">
+                                        <button class="action-btn btn-run" onclick="runPlan(${plan.id})">▶️ Chạy</button>
+                                        <button class="action-btn btn-stop" onclick="stopPlan(${plan.id})">⏹️ Dừng</button>
+                                        <button class="action-btn btn-edit" onclick="editPlan(${plan.id})">✏️ Sửa</button>
+                                        <button class="action-btn btn-delete" onclick="deletePlan(${plan.id})">🗑️ Xóa</button>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+        function renderAllPlans(data) {
+            const container = document.getElementById('plansContainer');
+            if (!plans.length) {
+                container.innerHTML = '<div class="empty-state">Chưa có plan nào.</div>';
+                return;
+            }
+            container.innerHTML = `
+                <div class="project-info" style="background: white; border-radius: 15px; padding: 25px; margin-bottom: 25px; box-shadow: 0 5px 15px rgba(0,0,0,0.08);">
+                    <h3>📋 Tất cả Plans</h3>
+                    <p>Tổng số plans: <span style="background: #667eea; color: white; padding: 4px 12px; border-radius: 20px; font-weight: 600;">${data.count}</span></p>
+                </div>
+                <div style="overflow-x: auto;">
+                    <table class="executions-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Tên Plan</th>
+                                <th>Dự án</th>
+                                <th>Mô tả</th>
+                                <th>Jenkins Job</th>
+                                <th>Cron Schedule</th>
+                                <th>Trạng thái</th>
+                                <th>Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${plans.map(plan => `
+                                <tr>
+                                    <td><code style="background: #e8f5e8; color: #2e7d32; padding: 2px 6px; border-radius: 4px; font-size: 12px; font-weight: 600;">${plan.plan_id || '-'}</code></td>
+                                    <td class="name-col"><strong>${plan.plan_name || '-'}</strong></td>
+                                    <td><span style="background: #e3f2fd; color: #1976d2; padding: 4px 8px; border-radius: 12px; font-size: 12px; font-weight: 500;">${plan.project_name || '-'}</span></td>
+                                    <td class="description-col">${plan.description || '-'}</td>
+                                    <td class="jenkins-col"><code style="background: #f8f9fa; padding: 2px 6px; border-radius: 4px; font-size: 12px;">${plan.jenkins_job || '-'}</code></td>
+                                    <td>${formatDateTime(plan.schedule_time)}</td>
+                                    <td><span class="execution-status status-${plan.status || 'pending'}">${getStatusText(plan.status)}</span></td>
+                                    <td class="actions-col">
+                                        <button class="action-btn btn-run" onclick="runPlan(${plan.id})">▶️ Chạy</button>
+                                        <button class="action-btn btn-stop" onclick="stopPlan(${plan.id})">⏹️ Dừng</button>
+                                        <button class="action-btn btn-edit" onclick="editPlan(${plan.id})">✏️ Sửa</button>
+                                        <button class="action-btn btn-delete" onclick="deletePlan(${plan.id})">🗑️ Xóa</button>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+        function getStatusText(status) {
+            const statusMap = {
+                'initialized': 'Khởi tạo',
+                'scheduled': 'Đã lên lịch',
+                'running': 'Running',
+                'completed': 'Hoàn thành',
+                'failed': 'Thất bại',
+                'cancelled': 'Đã hủy'
+            };
+            return statusMap[status] || status || 'Khởi tạo';
+        }
+        function formatDateTime(cronSchedule) {
+            if (!cronSchedule) return '-';
+            return cronSchedule; // Hiển thị cron schedule trực tiếp
+        }
+        
+        // Function to send cron schedule to Jenkins job
+        async function runPlan(planId) {
+            if (confirm('Bạn có chắc muốn gửi cron schedule đến Jenkins job?')) {
+                try {
+                    // Disable button và hiển thị loading
+                    const runBtn = event.target;
+                    const originalText = runBtn.textContent;
+                    runBtn.disabled = true;
+                    runBtn.textContent = '⏳ Đang gửi...';
+                    
+                    const response = await fetch(`${PLANS_API}/${planId}/run`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        }
+                    });
+                    
+                    if (response.ok) {
+                        const result = await response.json();
+                        
+                        // Cập nhật status của plan trong danh sách plans
+                        const index = plans.findIndex(plan => plan.id === planId);
+                        if (index !== -1) {
+                            plans[index].status = result.status;
+                        }
+                        
+                        // Render lại danh sách plans
+                        if (currentProjectId) {
+                            const currentProject = projects.find(p => p.id == currentProjectId);
+                            renderPlans({
+                                project: {
+                                    id: currentProject.id,
+                                    name: currentProject.name
+                                },
+                                plans: plans.filter(plan => plan.project_id == currentProjectId),
+                                count: plans.filter(plan => plan.project_id == currentProjectId).length
+                            });
+                        } else {
+                            renderAllPlans({
+                                plans: plans,
+                                count: plans.length
+                            });
+                        }
+                        
+                        alert(`✅ ${result.message}\n\nCron Schedule: ${result.cron_schedule}\nStatus: ${result.status}`);
+                    } else {
+                        const errorText = await response.text();
+                        alert(`❌ Lỗi: ${errorText}`);
+                    }
+                } catch (error) {
+                    console.error('Error sending parameters:', error);
+                    alert(`❌ Lỗi gửi parameters: ${error.message}`);
+                } finally {
+                    // Restore button
+                    const runBtn = event.target;
+                    runBtn.disabled = false;
+                    runBtn.textContent = originalText;
+                }
+            }
+        }
+        
+        // Function to poll status of running plan
+        async function startPlanStatusPolling(planId) {
+            console.log(`Starting status polling for plan ${planId}`);
+            const pollInterval = setInterval(async () => {
+                try {
+                    console.log(`Polling status for plan ${planId}...`);
+                    const response = await fetch(`${PLANS_API}/${planId}/status`);
+                    if (response.ok) {
+                        const result = await response.json();
+                        console.log(`Status update for plan ${planId}:`, result);
+                        
+                        // Cập nhật status trong danh sách plans
+                        const index = plans.findIndex(plan => plan.id === planId);
+                        if (index !== -1) {
+                            plans[index].status = result.status;
+                            console.log(`Updated plan ${planId} status to: ${result.status}`);
+                        }
+                        
+                        // Render lại danh sách plans
+                        if (currentProjectId) {
+                            const currentProject = projects.find(p => p.id == currentProjectId);
+                            renderPlans({
+                                project: {
+                                    id: currentProject.id,
+                                    name: currentProject.name
+                                },
+                                plans: plans.filter(plan => plan.project_id == currentProjectId),
+                                count: plans.filter(plan => plan.project_id == currentProjectId).length
+                            });
+                        } else {
+                            renderAllPlans({
+                                plans: plans,
+                                count: plans.length
+                            });
+                        }
+                        
+                        // Dừng polling nếu plan đã hoàn thành hoặc thất bại
+                        if (result.status === 'completed' || result.status === 'failed') {
+                            clearInterval(pollInterval);
+                            console.log(`Plan ${planId} finished with status: ${result.status}`);
+                        }
+                    } else {
+                        console.log(`Failed to get status for plan ${planId}:`, response.status);
+                    }
+                } catch (error) {
+                    console.error('Error polling status:', error);
+                    clearInterval(pollInterval);
+                }
+            }, 5000); // Kiểm tra mỗi 5 giây
+            
+            // Dừng polling sau 10 phút để tránh polling vô hạn
+            setTimeout(() => {
+                clearInterval(pollInterval);
+                console.log(`Polling timeout for plan ${planId}`);
+            }, 600000);
+        }
+        
+        // Function to stop plan
+        async function stopPlan(planId) {
+            if (confirm('Bạn có chắc muốn dừng plan này?')) {
+                try {
+                    // Disable button và hiển thị loading
+                    const stopBtn = event.target;
+                    const originalText = stopBtn.textContent;
+                    stopBtn.disabled = true;
+                    stopBtn.textContent = '⏳ Đang dừng...';
+                    
+                    const response = await fetch(`${PLANS_API}/${planId}/stop`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        }
+                    });
+                    
+                    if (response.ok) {
+                        const result = await response.json();
+                        
+                        // Cập nhật status của plan trong danh sách plans
+                        const index = plans.findIndex(plan => plan.id === planId);
+                        if (index !== -1) {
+                            plans[index].status = result.status;
+                        }
+                        
+                        // Render lại danh sách plans
+                        if (currentProjectId) {
+                            const currentProject = projects.find(p => p.id == currentProjectId);
+                            renderPlans({
+                                project: {
+                                    id: currentProject.id,
+                                    name: currentProject.name
+                                },
+                                plans: plans.filter(plan => plan.project_id == currentProjectId),
+                                count: plans.filter(plan => plan.project_id == currentProjectId).length
+                            });
+                        } else {
+                            renderAllPlans({
+                                plans: plans,
+                                count: plans.length
+                            });
+                        }
+                        
+                        alert(`✅ ${result.message}\n\nAction: ${result.action}\nStatus: ${result.status}`);
+                    } else {
+                        const errorText = await response.text();
+                        alert(`❌ Lỗi: ${errorText}`);
+                    }
+                } catch (error) {
+                    console.error('Error stopping plan:', error);
+                    alert(`❌ Lỗi dừng plan: ${error.message}`);
+                } finally {
+                    // Restore button
+                    const stopBtn = event.target;
+                    stopBtn.disabled = false;
+                    stopBtn.textContent = originalText;
+                }
+            }
+        }
+        
+        // Thêm Plan
+        document.getElementById('planForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            // Validation đầy đủ
+            const formData = new FormData(this);
+            const planName = formData.get('plan_name')?.trim();
+            const jenkinsJob = formData.get('jenkins_job')?.trim();
+            const scheduleTime = formData.get('schedule_time')?.trim();
+            
+            // Kiểm tra các trường bắt buộc
+            if (!currentProjectId) {
+                alert('❌ Vui lòng chọn dự án trước khi tạo plan!');
+                return;
+            }
+            
+            if (!planName) {
+                alert('❌ Vui lòng nhập tên plan!');
+                document.getElementById('planName').focus();
+                return;
+            }
+            
+            if (!jenkinsJob) {
+                alert('❌ Vui lòng nhập tên Jenkins job!');
+                document.getElementById('jenkinsJob').focus();
+                return;
+            }
+            
+            if (!scheduleTime) {
+                alert('❌ Vui lòng nhập lịch chạy (cron schedule)!');
+                document.getElementById('scheduleTime').focus();
+                return;
+            }
+            
+            // Kiểm tra format cron schedule (cơ bản)
+            const cronParts = scheduleTime.split(' ');
+            if (cronParts.length !== 5) {
+                alert('❌ Format lịch chạy không đúng! Vui lòng nhập theo format: "phút giờ ngày tháng thứ" (VD: "0 9 * * 1")');
+                document.getElementById('scheduleTime').focus();
+                return;
+            }
+            
+            const submitBtn = this.querySelector('button[type="submit"]');
+            const originalText = submitBtn.textContent;
+            submitBtn.disabled = true;
+            submitBtn.textContent = '⏳ Đang tạo...';
+            
+            const planData = {
+                plan_name: planName,
+                description: formData.get('description')?.trim() || '',
+                jenkins_job: jenkinsJob,
+                schedule_time: scheduleTime,
+                project_id: currentProjectId
+            };
+            try {
+                const response = await fetch(PLANS_API, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(planData)
+                });
+                if (response.ok) {
+                    const result = await response.json();
+                    const newPlan = {
+                        id: result.plan_id_db,
+                        plan_id: result.plan_id,
+                        plan_name: result.plan_name,
+                        description: result.description,
+                        project_id: result.project_id,
+                        project_name: result.project_name,
+                        jenkins_job: result.jenkins_job,
+                        schedule_time: result.schedule_time,
+                        status: result.status,
+                        created_at: result.created_at
+                    };
+                    plans.unshift(newPlan);
+                    if (currentProjectId) {
+                        const currentProject = projects.find(p => p.id == currentProjectId);
+                        renderPlans({
+                            project: { id: currentProject.id, name: currentProject.name },
+                            plans: plans.filter(p => p.project_id == currentProjectId),
+                            count: plans.filter(p => p.project_id == currentProjectId).length
+                        });
+                    } else {
+                        renderAllPlans({ plans: plans, count: plans.length });
+                    }
+                    setTimeout(() => {
+                        const firstRow = document.querySelector('.executions-table tbody tr');
+                        if (firstRow) {
+                            firstRow.style.backgroundColor = '#e8f5e8';
+                            firstRow.style.borderLeft = '4px solid #28a745';
+                            setTimeout(() => {
+                                firstRow.style.backgroundColor = '';
+                                firstRow.style.borderLeft = '';
+                            }, 3000);
+                        }
+                    }, 100);
+                    this.reset();
+                    alert(`✅ ${result.message}\n\nPlan vừa tạo:\n- ID: ${result.plan_id_db}\n- Plan ID: ${result.plan_id}\n- Jenkins Job: ${result.jenkins_job}\n- Dự án: ${result.project_name}`);
+                } else {
+                    const errorText = await response.text();
+                    alert(`❌ Lỗi: ${errorText}`);
+                }
+            } catch (error) {
+                console.error('Error creating plan:', error);
+                alert(`❌ Lỗi tạo plan: ${error.message}`);
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = originalText;
+            }
+        });
+        // Sửa Plan
+        function editPlan(id) {
+            currentEditingPlan = plans.find(p => p.id === id);
+            if (!currentEditingPlan) {
+                alert('Không tìm thấy plan để sửa');
+                return;
+            }
+            document.getElementById('editPlanName').value = currentEditingPlan.plan_name || '';
+            document.getElementById('editPlanDescription').value = currentEditingPlan.description || '';
+            document.getElementById('editJenkinsJob').value = currentEditingPlan.jenkins_job || '';
+            document.getElementById('editScheduleTime').value = currentEditingPlan.schedule_time || '';
+            const projectSelect = document.getElementById('editProjectId');
+            projectSelect.innerHTML = '<option value="">Chọn dự án</option>' +
+                projects.map(p => `<option value="${p.id}" ${p.id == currentEditingPlan.project_id ? 'selected' : ''}>${p.name}</option>`).join('');
+            document.getElementById('editModal').style.display = 'block';
+            loadJenkinsJobsForEditPlans(currentEditingPlan.jenkins_job);
+        }
+        function closeEditModal() {
+            document.getElementById('editModal').style.display = 'none';
+            currentEditingPlan = null;
+            document.getElementById('editPlanForm').reset();
+        }
+        document.getElementById('editPlanForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            if (!currentEditingPlan) {
+                alert('❌ Không có plan nào đang được sửa');
+                return;
+            }
+            
+            // Validation đầy đủ cho edit form
+            const formData = new FormData(this);
+            const planName = formData.get('plan_name')?.trim();
+            const jenkinsJob = formData.get('jenkins_job')?.trim();
+            const scheduleTime = formData.get('schedule_time')?.trim();
+            const projectId = parseInt(formData.get('project_id'));
+            
+            // Kiểm tra các trường bắt buộc
+            if (!planName) {
+                alert('❌ Vui lòng nhập tên plan!');
+                document.getElementById('editPlanName').focus();
+                return;
+            }
+            
+            if (!jenkinsJob) {
+                alert('❌ Vui lòng nhập tên Jenkins job!');
+                document.getElementById('editJenkinsJob').focus();
+                return;
+            }
+            
+            if (!scheduleTime) {
+                alert('❌ Vui lòng nhập lịch chạy (cron schedule)!');
+                document.getElementById('editScheduleTime').focus();
+                return;
+            }
+            
+            if (!projectId || isNaN(projectId)) {
+                alert('❌ Vui lòng chọn dự án!');
+                document.getElementById('editProjectId').focus();
+                return;
+            }
+            
+            // Kiểm tra format cron schedule (cơ bản)
+            const cronParts = scheduleTime.split(' ');
+            if (cronParts.length !== 5) {
+                alert('❌ Format lịch chạy không đúng! Vui lòng nhập theo format: "phút giờ ngày tháng thứ" (VD: "0 9 * * 1")');
+                document.getElementById('editScheduleTime').focus();
+                return;
+            }
+            
+            const submitBtn = this.querySelector('button[type="submit"]');
+            const originalText = submitBtn.textContent;
+            submitBtn.disabled = true;
+            submitBtn.textContent = '⏳ Đang cập nhật...';
+            
+            const planData = {
+                plan_name: planName,
+                description: formData.get('description')?.trim() || '',
+                jenkins_job: jenkinsJob,
+                schedule_time: scheduleTime,
+                project_id: projectId
+            };
+            try {
+                const response = await fetch(`${PLANS_API}/${currentEditingPlan.id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(planData)
+                });
+                if (response.ok) {
+                    const result = await response.json();
+                    const index = plans.findIndex(p => p.id === currentEditingPlan.id);
+                    if (index !== -1) {
+                        plans[index] = {
+                            id: result.plan_id_db,
+                            plan_id: result.plan_id,
+                            plan_name: result.plan_name,
+                            description: result.description,
+                            project_id: result.project_id,
+                            project_name: result.project_name,
+                            jenkins_job: result.jenkins_job,
+                            schedule_time: result.schedule_time,
+                            status: result.status,
+                            created_at: result.created_at
+                        };
+                    }
+                    if (currentProjectId) {
+                        const currentProject = projects.find(p => p.id == currentProjectId);
+                        renderPlans({
+                            project: { id: currentProject.id, name: currentProject.name },
+                            plans: plans.filter(p => p.project_id == currentProjectId),
+                            count: plans.filter(p => p.project_id == currentProjectId).length
+                        });
+                    } else {
+                        renderAllPlans({ plans: plans, count: plans.length });
+                    }
+                    closeEditModal();
+                    alert(`✅ ${result.message}`);
+                } else {
+                    const errorText = await response.text();
+                    alert(`❌ Lỗi: ${errorText}`);
+                }
+            } catch (error) {
+                console.error('Error updating plan:', error);
+                alert(`❌ Lỗi cập nhật plan: ${error.message}`);
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = originalText;
+            }
+        });
+        window.onclick = function(event) {
+            const modal = document.getElementById('editModal');
+            if (event.target === modal) {
+                closeEditModal();
+            }
+        }
+        async function deletePlan(id) {
+            if (confirm('Bạn có chắc muốn xóa plan này?')) {
+                try {
+                    const response = await fetch(`${PLANS_API}/${id}`, { method: 'DELETE' });
+                    if (response.ok) {
+                        const result = await response.json();
+                        plans = plans.filter(p => p.id !== id);
+                        if (currentProjectId) {
+                            const currentProject = projects.find(p => p.id == currentProjectId);
+                            renderPlans({
+                                project: { id: currentProject.id, name: currentProject.name },
+                                plans: plans.filter(p => p.project_id == currentProjectId),
+                                count: plans.filter(p => p.project_id == currentProjectId).length
+                            });
+                        } else {
+                            renderAllPlans({ plans: plans, count: plans.length });
+                        }
+                        alert(`✅ ${result.message}`);
+                    } else {
+                        const errorText = await response.text();
+                        alert(`❌ Lỗi: ${errorText}`);
+                    }
+                } catch (error) {
+                    console.error('Error deleting plan:', error);
+                    alert(`❌ Lỗi xóa plan: ${error.message}`);
+                }
+            }
+        }
+        async function loadJenkinsJobsForPlans(selectedJob) {
+            const select = document.getElementById('jenkinsJob');
+            try {
+                select.innerHTML = '<option value="">Đang tải danh sách jobs...</option>';
+                select.disabled = true;
+                const res = await fetch('/api/cicd/jenkins-jobs');
+                if (!res.ok) throw new Error('Lỗi tải jobs');
+                const data = await res.json();
+                if (!data.jobs || !data.jobs.length) throw new Error('Không có job nào');
+                let options = '<option value="">-- Chọn Jenkins job --</option>';
+                data.jobs.forEach(job => {
+                    options += `<option value="${job.name}">${job.name}</option>`;
+                });
+                if (selectedJob && !data.jobs.some(j => j.name === selectedJob)) {
+                    options = `<option value="${selectedJob}" selected>${selectedJob} (không có trong Jenkins)</option>` + options;
+                }
+                select.innerHTML = options;
+                if (selectedJob) select.value = selectedJob;
+                select.disabled = false;
+            } catch (e) {
+                select.innerHTML = `<option value="">Không lấy được danh sách Jenkins jobs</option>`;
+                select.disabled = true;
+            }
+        }
+        async function loadJenkinsJobsForEditPlans(selectedJob) {
+            const select = document.getElementById('editJenkinsJob');
+            try {
+                select.innerHTML = '<option value="">Đang tải danh sách jobs...</option>';
+                select.disabled = true;
+                const res = await fetch('/api/cicd/jenkins-jobs');
+                if (!res.ok) throw new Error('Lỗi tải jobs');
+                const data = await res.json();
+                if (!data.jobs || !data.jobs.length) throw new Error('Không có job nào');
+                let options = '<option value="">-- Chọn Jenkins job --</option>';
+                data.jobs.forEach(job => {
+                    options += `<option value="${job.name}">${job.name}</option>`;
+                });
+                if (selectedJob && !data.jobs.some(j => j.name === selectedJob)) {
+                    options = `<option value="${selectedJob}" selected>${selectedJob} (không có trong Jenkins)</option>` + options;
+                }
+                select.innerHTML = options;
+                if (selectedJob) select.value = selectedJob;
+                select.disabled = false;
+            } catch (e) {
+                select.innerHTML = `<option value="">Không lấy được danh sách Jenkins jobs</option>`;
+                select.disabled = true;
+            }
+        }
+        function checkAuth() {
+            const token = localStorage.getItem('testops_token');
+            if (!token) {
+                window.location.href = '/login';
+                return;
+            }
+            fetch(`${API_BASE}/auth/me`, {
+                headers: { 'Authorization': 'Bearer ' + token }
+            })
+            .then(response => response.ok ? response.json() : Promise.reject())
+            .then(data => {
+                document.getElementById('userName').textContent = data.full_name;
+            })
+            .catch(() => {
+                localStorage.removeItem('testops_token');
+                localStorage.removeItem('testops_user');
+                window.location.href = '/login';
+            });
+        }
+        function logout() {
+            localStorage.removeItem('testops_token');
+            localStorage.removeItem('testops_user');
+            window.location.href = '/login';
+        }
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelector('.logout-btn').addEventListener('click', logout);
+            checkAuth();
+            loadProjects();
+            loadJenkinsJobsForPlans();
+        });
+    </script>
+</body>
+</html> 

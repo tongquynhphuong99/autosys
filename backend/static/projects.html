@@ -1,0 +1,1033 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TestOps - Quản lý Dự án</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .header {
+            background: white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        .nav-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 70px;
+        }
+        
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .nav-menu {
+            display: flex;
+            gap: 5px;
+        }
+        
+        .nav-item {
+            padding: 12px 20px;
+            border-radius: 8px;
+            text-decoration: none;
+            color: #666;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .nav-item:hover {
+            background: #f0f2f5;
+            color: #333;
+        }
+        
+        .nav-item.active {
+            background: #667eea;
+            color: white;
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .user-details {
+            text-align: right;
+        }
+        
+        .user-name {
+            font-weight: 600;
+            color: #333;
+            font-size: 14px;
+        }
+        
+        .user-role {
+            font-size: 12px;
+            color: #666;
+        }
+        
+        .logout-btn {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.3s ease;
+        }
+        
+        .logout-btn:hover {
+            background: #c82333;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+        
+        .page-title {
+            color: white;
+            text-align: center;
+            margin-bottom: 40px;
+            font-size: 2.5em;
+        }
+        
+        .controls {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+        
+        .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr 1fr;
+            gap: 20px;
+            align-items: start;
+        }
+        
+        .form-row-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            align-items: start;
+            margin-top: 20px;
+        }
+        
+        .form-actions {
+            margin-top: 20px;
+            text-align: right;
+        }
+        
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .form-group label {
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .form-group input, .form-group select {
+            padding: 12px;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+        
+        .form-group input:focus, .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary {
+            background: #667eea;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #5a6fd8;
+            transform: translateY(-2px);
+        }
+        
+        .btn-success {
+            background: #28a745;
+            color: white;
+        }
+        
+        .btn-success:hover {
+            background: #218838;
+            transform: translateY(-2px);
+        }
+        
+        .projects-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+            gap: 25px;
+        }
+        
+        .project-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+            border: 2px solid transparent;
+        }
+        
+        .project-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.15);
+            border-color: #667eea;
+        }
+        
+        .project-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 15px;
+        }
+        
+        .project-name {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 5px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .repo-indicator {
+            font-size: 14px;
+            color: #28a745;
+            cursor: help;
+        }
+        
+        .project-status {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .status-active {
+            background: #d4edda;
+            color: #155724;
+        }
+        
+        .status-paused {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .status-completed {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+        
+        .project-description {
+            color: #666;
+            margin-bottom: 15px;
+            line-height: 1.5;
+        }
+        
+        .project-meta {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        
+        .project-team {
+            margin-bottom: 15px;
+        }
+        
+        .team-section {
+            margin-bottom: 10px;
+        }
+        
+        .team-label {
+            font-size: 12px;
+            color: #888;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+        
+        .team-value {
+            font-size: 14px;
+            color: #333;
+            line-height: 1.4;
+        }
+        
+        .members-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+        }
+        
+        .member-tag {
+            background: #e3f2fd;
+            color: #1976d2;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 11px;
+            font-weight: 500;
+        }
+        
+
+        
+
+        
+        .repo-link {
+            color: #667eea;
+            text-decoration: none;
+            font-size: 12px;
+            word-break: break-all;
+        }
+        
+        .repo-link:hover {
+            text-decoration: underline;
+        }
+        
+        .meta-item {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .meta-label {
+            font-size: 12px;
+            color: #888;
+            margin-bottom: 2px;
+        }
+        
+        .meta-value {
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .project-actions {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .btn-small {
+            padding: 8px 16px;
+            font-size: 12px;
+        }
+        
+        .btn-edit {
+            background: #ffc107;
+            color: #333;
+        }
+        
+        .btn-delete {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .btn-view {
+            background: #17a2b8;
+            color: white;
+        }
+        
+        .empty-state {
+            text-align: center;
+            color: white;
+            padding: 60px 20px;
+        }
+        
+        .empty-state h3 {
+            margin-bottom: 15px;
+            font-size: 1.5em;
+        }
+        
+        .loading {
+            text-align: center;
+            color: white;
+            padding: 40px;
+        }
+        
+        .spinner {
+            border: 4px solid rgba(255,255,255,0.3);
+            border-top: 4px solid white;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            backdrop-filter: blur(5px);
+        }
+        
+        .modal-content {
+            background: white;
+            margin: 5% auto;
+            padding: 0;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 1000px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            animation: modalSlideIn 0.3s ease-out;
+        }
+        
+        @keyframes modalSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-50px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .modal-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 30px;
+            border-radius: 15px 15px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        
+        .modal-header h2 {
+            margin: 0;
+            font-size: 1.5em;
+        }
+        
+        .close {
+            color: white;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .close:hover {
+            opacity: 0.7;
+        }
+        
+        .modal form {
+            padding: 30px;
+        }
+        
+        .modal .form-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr 1fr;
+            gap: 20px;
+            align-items: start;
+        }
+        
+        .form-row-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr 1fr;
+            gap: 20px;
+            align-items: start;
+            margin-top: 20px;
+        }
+        
+        .modal .form-row-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr 1fr;
+            gap: 20px;
+            align-items: start;
+            margin-top: 20px;
+        }
+        
+        .modal .form-group {
+            display: flex;
+            flex-direction: column;
+            min-height: 80px;
+        }
+        
+        .modal .form-group label {
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+            font-size: 14px;
+        }
+        
+        .modal .form-group input,
+        .modal .form-group select {
+            padding: 12px;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+        
+        @media (max-width: 768px) {
+            .form-row, .form-row-2 {
+                grid-template-columns: 1fr;
+            }
+            
+            .projects-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .header-content {
+                flex-direction: column;
+                gap: 15px;
+            }
+            
+            .project-meta {
+                grid-template-columns: 1fr;
+            }
+            
+            .modal-content {
+                width: 95%;
+                margin: 10% auto;
+            }
+            
+            .modal .form-row,
+            .modal .form-row-2 {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+            
+            .modal .form-group {
+                min-height: auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="nav-container">
+            <div class="logo">
+                🚀 TestOps
+            </div>
+            
+            <nav class="nav-menu">
+                <a href="/" class="nav-item">📊 Dashboard</a>
+                <a href="/projects" class="nav-item active">📁 Projects</a>
+                <a href="/tests" class="nav-item">🧪 Tests</a>
+                <a href="/executions" class="nav-item">▶️ Executions</a>
+                <a href="/plans" class="nav-item">📋 Plans</a>
+                <a href="/cicd" class="nav-item">🔄 CI/CD</a>
+                <a href="/reports" class="nav-item">📈 Reports</a>
+                <a href="/logs" class="nav-item">📝 Logs</a>
+            </nav>
+            
+            <div class="user-info">
+                <div class="user-details">
+                    <div class="user-name" id="userName">Loading...</div>
+                    <div class="user-role">Administrator</div>
+                </div>
+                <button class="logout-btn">🚪 Logout</button>
+            </div>
+        </div>
+    </div>
+    
+    <div class="container">
+        <h1 class="page-title">📁 Quản lý Dự án</h1>
+        
+        <div class="controls">
+            <form id="projectForm">
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="projectName">Tên dự án</label>
+                        <input type="text" id="projectName" name="name" placeholder="Nhập tên dự án" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="projectDescription">Mô tả</label>
+                        <input type="text" id="projectDescription" name="description" placeholder="Mô tả dự án">
+                    </div>
+                    <div class="form-group">
+                        <label for="projectStatus">Trạng thái</label>
+                        <select id="projectStatus" name="status">
+                            <option value="active">Đang hoạt động</option>
+                            <option value="paused">Tạm dừng</option>
+                            <option value="completed">Hoàn thành</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="projectRepo">Link Repository</label>
+                        <input type="url" id="projectRepo" name="repo_link" placeholder="https://github.com/...">
+                    </div>
+                </div>
+                <div class="form-row-2">
+                    <div class="form-group">
+                        <label for="projectManager">Project Manager</label>
+                        <input type="text" id="projectManager" name="project_manager" placeholder="Tên Project Manager">
+                    </div>
+                    <div class="form-group">
+                        <label for="projectMembers">Team Members</label>
+                        <input type="text" id="projectMembers" name="members" placeholder="phân cách bằng dấu phẩy">
+                    </div>
+                    <div class="form-group">
+                        <!-- Cột trống để cân bằng layout -->
+                    </div>
+                    <div class="form-group">
+                        <!-- Cột trống để cân bằng layout -->
+                    </div>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">➕ Thêm dự án</button>
+                </div>
+            </form>
+        </div>
+        
+        <div id="projectsContainer">
+            <div class="loading">
+                <div class="spinner"></div>
+                <p>Đang tải danh sách dự án...</p>
+            </div>
+        </div>
+        
+        <!-- Edit Project Modal -->
+        <div id="editModal" class="modal" style="display: none;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>✏️ Sửa Dự án</h2>
+                    <span class="close">&times;</span>
+                </div>
+                <form id="editProjectForm">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="editProjectName">Tên dự án</label>
+                            <input type="text" id="editProjectName" name="name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="editProjectDescription">Mô tả</label>
+                            <input type="text" id="editProjectDescription" name="description">
+                        </div>
+                        <div class="form-group">
+                            <label for="editProjectStatus">Trạng thái</label>
+                            <select id="editProjectStatus" name="status">
+                                <option value="active">Đang hoạt động</option>
+                                <option value="paused">Tạm dừng</option>
+                                <option value="completed">Hoàn thành</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="editProjectRepo">Link Repository</label>
+                            <input type="url" id="editProjectRepo" name="repo_link">
+                        </div>
+                    </div>
+                    <div class="form-row-2">
+                        <div class="form-group">
+                            <label for="editProjectManager">Project Manager</label>
+                            <input type="text" id="editProjectManager" name="project_manager">
+                        </div>
+                        <div class="form-group">
+                            <label for="editProjectMembers">Team Members</label>
+                            <input type="text" id="editProjectMembers" name="members" placeholder="phân cách bằng dấu phẩy">
+                        </div>
+                        <div class="form-group">
+                            <!-- Cột trống để cân bằng layout -->
+                        </div>
+                        <div class="form-group">
+                            <!-- Cột trống để cân bằng layout -->
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary">❌ Hủy</button>
+                        <button type="submit" class="btn btn-success">💾 Lưu thay đổi</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // API base URL
+        const API_BASE = '/api/projects';
+        
+        let projects = [];
+        
+        // Load projects from API
+        async function loadProjects() {
+            try {
+                const response = await fetch(API_BASE);
+                if (response.ok) {
+                    projects = await response.json();
+                    displayProjects();
+                } else {
+                    throw new Error('Failed to load projects');
+                }
+            } catch (error) {
+                console.error('Error loading projects:', error);
+                document.getElementById('projectsContainer').innerHTML = `
+                    <div class="empty-state">
+                        <h3>❌ Lỗi tải dữ liệu</h3>
+                        <p>Không thể kết nối đến API. Vui lòng thử lại sau.</p>
+                    </div>
+                `;
+            }
+        }
+        
+        // Hiển thị danh sách dự án
+        function displayProjects() {
+            const container = document.getElementById('projectsContainer');
+            
+            if (projects.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <h3>📭 Chưa có dự án nào</h3>
+                        <p>Hãy tạo dự án đầu tiên để bắt đầu!</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = `
+                <div class="projects-grid">
+                    ${projects.map(project => `
+                        <div class="project-card">
+                            <div class="project-header">
+                                <div>
+                                    <div class="project-name">
+                                        ${project.name}
+                                        ${project.repo_link ? '<span class="repo-indicator" title="Có link repository">📁</span>' : ''}
+                                    </div>
+                                </div>
+                                <span class="project-status status-${project.status}">
+                                    ${getStatusText(project.status)}
+                                </span>
+                            </div>
+                            <div class="project-description">${project.description}</div>
+                            
+                            <div class="project-team">
+                                <div class="team-section">
+                                    <div class="team-label">👨‍💼 Project Manager:</div>
+                                    <div class="team-value">${project.project_manager || 'Chưa có PM'}</div>
+                                </div>
+                                <div class="team-section">
+                                    <div class="team-label">👥 Team Members:</div>
+                                    <div class="team-value">
+                                        ${project.members && project.members.length > 0 ? 
+                                            `<div class="members-list">${project.members.map(member => `<span class="member-tag">${member}</span>`).join('')}</div>` : 
+                                            'Chưa có thành viên'
+                                        }
+                                    </div>
+                                </div>
+
+                            </div>
+                            
+                            <div class="project-meta">
+                                <div class="meta-item">
+                                    <span class="meta-label">Ngày tạo</span>
+                                    <span class="meta-value">${formatDate(project.created_at)}</span>
+                                </div>
+                                <div class="meta-item">
+                                    <span class="meta-label">Test Cases</span>
+                                    <span class="meta-value">${project.testcase_number ?? 0}</span>
+                                </div>
+                                <div class="meta-item">
+                                    <span class="meta-label">Executions</span>
+                                    <span class="meta-value">${project.executions_count}</span>
+                                </div>
+                                <div class="meta-item">
+                                    <span class="meta-label">Tỷ lệ thành công</span>
+                                    <span class="meta-value">${project.success_rate || 0}%</span>
+                                </div>
+                            </div>
+                            <div class="project-actions">
+                                <button class="btn btn-small btn-view" onclick="viewProject(${project.id})">👁️ Xem</button>
+                                <button class="btn btn-small btn-edit" onclick="openEditModal(${project.id})">✏️ Sửa</button>
+                                <button class="btn btn-small btn-delete" onclick="deleteProject(${project.id})">🗑️ Xóa</button>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+        }
+        
+        // Chuyển đổi trạng thái
+        function getStatusText(status) {
+            const statusMap = {
+                'active': 'Đang hoạt động',
+                'paused': 'Tạm dừng',
+                'completed': 'Hoàn thành'
+            };
+            return statusMap[status] || status;
+        }
+        
+        // Format ngày tháng và giờ
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            // Chuyển đổi từ UTC sang múi giờ Việt Nam (+7)
+            const vietnamTime = new Date(date.getTime() + (7 * 60 * 60 * 1000));
+            return vietnamTime.toLocaleString('vi-VN', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                timeZone: 'Asia/Ho_Chi_Minh'
+            });
+        }
+        
+        // Xử lý form thêm dự án
+        document.getElementById('projectForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const projectData = {
+                name: formData.get('name'),
+                description: formData.get('description'),
+                status: formData.get('status'),
+                repo_link: formData.get('repo_link') || "",
+                project_manager: formData.get('project_manager') || "",
+                members: formData.get('members') ? formData.get('members').split(',').map(m => m.trim()).filter(m => m) : []
+            };
+            
+            try {
+                const response = await fetch(API_BASE, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(projectData)
+                });
+                
+                if (response.ok) {
+                    const newProject = await response.json();
+                    projects.push(newProject);
+                    displayProjects();
+                    e.target.reset();
+                    
+                    alert('✅ Dự án đã được tạo thành công!');
+                } else {
+                    throw new Error('Failed to create project');
+                }
+            } catch (error) {
+                console.error('Error creating project:', error);
+                alert('❌ Lỗi khi tạo dự án. Vui lòng thử lại.');
+            }
+        });
+        
+        // Các hàm xử lý dự án
+        function viewProject(id) {
+            const project = projects.find(p => p.id === id);
+            let repoInfo = project.repo_link ? `\n📁 Repository: ${project.repo_link}` : '\n📁 Repository: Chưa có link';
+            alert(`👁️ Xem dự án: ${project.name}\n\nMô tả: ${project.description}\nTrạng thái: ${getStatusText(project.status)}${repoInfo}\n👨‍💼 PM: ${project.project_manager || 'Chưa có PM'}\n👥 Members: ${project.members.join(', ') || 'Chưa có thành viên'}`);
+        }
+        
+        let currentEditProjectId = null;
+        
+        function openEditModal(id) {
+            const project = projects.find(p => p.id === id);
+            if (!project) return;
+            
+            currentEditProjectId = id;
+            
+            // Fill form with current project data
+            document.getElementById('editProjectName').value = project.name;
+            document.getElementById('editProjectDescription').value = project.description;
+            document.getElementById('editProjectStatus').value = project.status;
+            document.getElementById('editProjectRepo').value = project.repo_link || '';
+            document.getElementById('editProjectManager').value = project.project_manager || '';
+            document.getElementById('editProjectMembers').value = project.members.join(', ');
+            
+
+            
+            // Show modal
+            document.getElementById('editModal').style.display = 'block';
+        }
+        
+        function closeEditModal() {
+            document.getElementById('editModal').style.display = 'none';
+            currentEditProjectId = null;
+        }
+        
+        // Handle edit form submission
+        document.getElementById('editProjectForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            if (!currentEditProjectId) return;
+            
+            const formData = new FormData(e.target);
+            const projectData = {
+                name: formData.get('name'),
+                description: formData.get('description'),
+                status: formData.get('status'),
+                repo_link: formData.get('repo_link') || "",
+                project_manager: formData.get('project_manager') || "",
+                members: formData.get('members') ? formData.get('members').split(',').map(m => m.trim()).filter(m => m) : []
+            };
+            
+            try {
+                const response = await fetch(`${API_BASE}/${currentEditProjectId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(projectData)
+                });
+                
+                if (response.ok) {
+                    const updatedProject = await response.json();
+                    const index = projects.findIndex(p => p.id === currentEditProjectId);
+                    projects[index] = updatedProject;
+                displayProjects();
+                    closeEditModal();
+                    alert('✅ Dự án đã được cập nhật thành công!');
+                } else {
+                    throw new Error('Failed to update project');
+                }
+            } catch (error) {
+                console.error('Error updating project:', error);
+                alert('❌ Lỗi khi cập nhật dự án. Vui lòng thử lại.');
+            }
+        });
+        
+
+        
+        async function deleteProject(id) {
+            if (confirm('Bạn có chắc chắn muốn xóa dự án này?')) {
+                try {
+                    const response = await fetch(`${API_BASE}/${id}`, {
+                        method: 'DELETE'
+                    });
+                    
+                    if (response.ok) {
+                projects = projects.filter(p => p.id !== id);
+                displayProjects();
+                alert('✅ Dự án đã được xóa!');
+                    } else {
+                        throw new Error('Failed to delete project');
+                    }
+                } catch (error) {
+                    console.error('Error deleting project:', error);
+                    alert('❌ Lỗi khi xóa dự án. Vui lòng thử lại.');
+                }
+            }
+        }
+        
+        // Khởi tạo trang
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add logout button event listener
+            document.querySelector('.logout-btn').addEventListener('click', logout);
+            
+            // Close modal when clicking X button
+            document.querySelector('#editModal .close').addEventListener('click', closeEditModal);
+            
+            // Close modal when clicking Cancel button
+            document.querySelector('#editModal .btn-secondary').addEventListener('click', closeEditModal);
+            
+            // Close modal when clicking outside
+            window.onclick = function(event) {
+                const modal = document.getElementById('editModal');
+                if (event.target === modal) {
+                    closeEditModal();
+                }
+            }
+            
+            checkAuth();
+            loadProjects();
+        });
+        
+        function checkAuth() {
+            const token = localStorage.getItem('testops_token');
+            if (!token) {
+                window.location.href = '/login';
+                return;
+            }
+            
+            // Get user info
+            fetch('/api/auth/me', {
+                headers: {
+                    'Authorization': 'Bearer ' + token
+                }
+            })
+            .then(response => {
+                if (response.ok) {
+                    return response.json();
+                } else {
+                    throw new Error('Token invalid');
+                }
+            })
+            .then(data => {
+                document.getElementById('userName').textContent = data.full_name;
+            })
+            .catch(error => {
+                console.error('Auth check failed:', error);
+                localStorage.removeItem('testops_token');
+                localStorage.removeItem('testops_user');
+                window.location.href = '/login';
+            });
+        }
+        
+        function showFeature(feature) {
+            alert(`${feature}: This feature will be implemented soon!`);
+        }
+        
+        function logout() {
+            localStorage.removeItem('testops_token');
+            localStorage.removeItem('testops_user');
+            window.location.href = '/login';
+        }
+    </script>
+</body>
+</html> 

@@ -1,0 +1,55 @@
+# Jenkins Plugins cho TestOps System
+
+# Core Plugins
+pipeline
+git
+github
+credentials-binding
+ssh-agent
+timestamper
+workspace-cleanup
+
+# Test Automation
+robot
+junit
+test-results-analyzer
+htmlpublisher
+test-results-aggregator
+
+# Docker & Container
+docker-plugin
+docker-pipeline
+docker-build-step
+docker-build-publish
+
+# Notification
+email-ext
+slack
+discord-notifier
+telegram-notifications
+
+# Security
+role-strategy
+matrix-auth
+ldap
+active-directory
+
+# Build & Deployment
+parameterized-trigger
+build-pipeline-plugin
+delivery-pipeline-plugin
+blueocean
+
+# Additional Useful Plugins
+ansicolor
+build-timeout
+copyartifact
+envinject
+groovy
+job-dsl
+multibranch-scan-webhook-trigger
+pipeline-stage-view
+rebuild
+simple-theme-plugin
+throttle-concurrents
+warnings-ng 

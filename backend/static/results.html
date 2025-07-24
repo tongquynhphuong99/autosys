@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TestOps - Chi tiết Results</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            background: white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+
+        .page-title {
+            font-size: 2.5em;
+            font-weight: 700;
+            color: #2c3e50;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .back-btn {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            margin-bottom: 20px;
+        }
+
+        .back-btn:hover {
+            background: #2980b9;
+            transform: translateY(-2px);
+        }
+
+        .task-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .info-card {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 15px;
+            border-left: 5px solid #3498db;
+        }
+
+        .info-card h3 {
+            color: #2c3e50;
+            margin-bottom: 10px;
+            font-size: 1.2em;
+        }
+
+        .info-card p {
+            color: #555;
+            font-size: 1.1em;
+            font-weight: 500;
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 14px;
+            text-transform: uppercase;
+        }
+
+        .status-success { background: #d4edda; color: #155724; }
+        .status-failed { background: #f8d7da; color: #721c24; }
+        .status-running { background: #fff3cd; color: #856404; }
+        .status-unknown { background: #e2e3e5; color: #383d41; }
+
+        .content-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+
+        .section {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+
+        .section h2 {
+            color: #2c3e50;
+            margin-bottom: 20px;
+            font-size: 1.5em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .file-list {
+            list-style: none;
+        }
+
+        .file-item {
+            background: #f8f9fa;
+            margin-bottom: 10px;
+            padding: 15px;
+            border-radius: 10px;
+            border-left: 4px solid #3498db;
+            transition: all 0.3s ease;
+        }
+
+        .file-item:hover {
+            background: #e9ecef;
+            transform: translateX(5px);
+        }
+
+        .file-name {
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+
+        .file-size {
+            color: #6c757d;
+            font-size: 0.9em;
+        }
+
+        .file-link {
+            color: #3498db;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        .file-link:hover {
+            text-decoration: underline;
+        }
+
+        .console-log {
+            background: #1e1e1e;
+            color: #d4d4d4;
+            padding: 20px;
+            border-radius: 10px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.5;
+            max-height: 400px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 50px;
+            color: #6c757d;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 20px;
+            border-radius: 10px;
+            border-left: 5px solid #dc3545;
+        }
+
+        .full-width {
+            grid-column: 1 / -1;
+        }
+
+        .build-info {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+        }
+
+        .build-stat {
+            background: #e3f2fd;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+        }
+
+        .build-stat-value {
+            font-size: 1.5em;
+            font-weight: 700;
+            color: #1976d2;
+        }
+
+        .build-stat-label {
+            color: #424242;
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+
+        @media (max-width: 768px) {
+            .content-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .task-info {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <a href="/reports" class="back-btn">← Quay lại Reports</a>
+            <div class="page-title">
+                📊 Chi tiết Results
+            </div>
+            <div id="taskInfo" class="task-info">
+                <!-- Task info will be loaded here -->
+            </div>
+        </div>
+
+        <div id="loading" class="loading">
+            <h2>⏳ Đang tải dữ liệu...</h2>
+        </div>
+
+        <div id="content" style="display: none;">
+            <div class="content-grid">
+                <div class="section">
+                    <h2>🏗️ Thông tin Build</h2>
+                    <div id="buildInfo" class="build-info">
+                        <!-- Build info will be loaded here -->
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2>📁 Artifacts</h2>
+                    <ul id="artifactsList" class="file-list">
+                        <!-- Artifacts will be loaded here -->
+                    </ul>
+                </div>
+
+                <div class="section">
+                    <h2>📄 Result Files</h2>
+                    <ul id="resultFilesList" class="file-list">
+                        <!-- Result files will be loaded here -->
+                    </ul>
+                </div>
+
+                <div class="section">
+                    <h2>📂 Workspace Files</h2>
+                    <ul id="workspaceFilesList" class="file-list">
+                        <!-- Workspace files will be loaded here -->
+                    </ul>
+                </div>
+
+                <div class="section full-width">
+                    <h2>📝 Console Log</h2>
+                    <div id="consoleLog" class="console-log">
+                        <!-- Console log will be loaded here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const EXECUTIONS_API = '/api/executions';
+        
+        // Lấy execution ID từ URL parameter
+        const urlParams = new URLSearchParams(window.location.search);
+        const executionId = urlParams.get('id');
+        
+        if (!executionId) {
+            document.getElementById('loading').innerHTML = '<div class="error">❌ Không tìm thấy Execution ID</div>';
+        } else {
+            loadExecutionResults(executionId);
+        }
+        
+        async function loadExecutionResults(executionId) {
+            try {
+                const response = await fetch(`${EXECUTIONS_API}/${executionId}/results`);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    displayResults(data);
+                } else {
+                    const error = await response.json();
+                    document.getElementById('loading').innerHTML = `
+                        <div class="error">
+                            ❌ Lỗi: ${error.detail || 'Không thể tải dữ liệu'}
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                document.getElementById('loading').innerHTML = `
+                    <div class="error">
+                        ❌ Lỗi kết nối: ${error.message}
+                    </div>
+                `;
+            }
+        }
+        
+        function displayResults(data) {
+            // Ẩn loading, hiển thị content
+            document.getElementById('loading').style.display = 'none';
+            document.getElementById('content').style.display = 'block';
+            
+            // Hiển thị thông tin task
+            displayTaskInfo(data);
+            
+            // Hiển thị thông tin build
+            displayBuildInfo(data.build_info);
+            
+            // Hiển thị artifacts
+            displayArtifacts(data.artifacts);
+            
+            // Hiển thị result files
+            displayResultFiles(data.result_files);
+            
+            // Hiển thị workspace files
+            displayWorkspaceFiles(data.workspace_files);
+            
+            // Hiển thị console log
+            displayConsoleLog(data.console_log);
+        }
+        
+        function displayTaskInfo(data) {
+            const taskInfo = document.getElementById('taskInfo');
+            taskInfo.innerHTML = `
+                <div class="info-card">
+                    <h3>📋 Task ID</h3>
+                    <p>${data.task_id}</p>
+                </div>
+                <div class="info-card">
+                    <h3>📝 Tên Task</h3>
+                    <p>${data.task_name}</p>
+                </div>
+                <div class="info-card">
+                    <h3>🔧 Jenkins Job</h3>
+                    <p>${data.jenkins_job}</p>
+                </div>
+                <div class="info-card">
+                    <h3>📊 Trạng thái</h3>
+                    <span class="status-badge status-${data.build_info?.result || 'unknown'}">
+                        ${data.build_info?.result || 'Unknown'}
+                    </span>
+                </div>
+            `;
+        }
+        
+        function displayBuildInfo(buildInfo) {
+            const buildInfoDiv = document.getElementById('buildInfo');
+            
+            if (!buildInfo) {
+                buildInfoDiv.innerHTML = '<p>Không có thông tin build</p>';
+                return;
+            }
+            
+            const duration = buildInfo.duration ? Math.round(buildInfo.duration / 1000) : 0;
+            const timestamp = buildInfo.timestamp ? new Date(buildInfo.timestamp).toLocaleString('vi-VN') : 'N/A';
+            
+            buildInfoDiv.innerHTML = `
+                <div class="build-stat">
+                    <div class="build-stat-value">#${buildInfo.number || 'N/A'}</div>
+                    <div class="build-stat-label">Build Number</div>
+                </div>
+                <div class="build-stat">
+                    <div class="build-stat-value">${buildInfo.result || 'Unknown'}</div>
+                    <div class="build-stat-label">Result</div>
+                </div>
+                <div class="build-stat">
+                    <div class="build-stat-value">${duration}s</div>
+                    <div class="build-stat-label">Duration</div>
+                </div>
+                <div class="build-stat">
+                    <div class="build-stat-value">${timestamp}</div>
+                    <div class="build-stat-label">Timestamp</div>
+                </div>
+            `;
+        }
+        
+        function displayArtifacts(artifacts) {
+            const artifactsList = document.getElementById('artifactsList');
+            
+            if (!artifacts || artifacts.length === 0) {
+                artifactsList.innerHTML = '<li>Không có artifacts</li>';
+                return;
+            }
+            
+            artifactsList.innerHTML = artifacts.map(artifact => `
+                <li class="file-item">
+                    <div class="file-name">${artifact.fileName}</div>
+                    <div class="file-size">${formatFileSize(artifact.size)}</div>
+                    <a href="${artifact.relativePath}" class="file-link" target="_blank">Xem file</a>
+                </li>
+            `).join('');
+        }
+        
+        function displayResultFiles(resultFiles) {
+            const resultFilesList = document.getElementById('resultFilesList');
+            
+            if (!resultFiles || resultFiles.length === 0) {
+                resultFilesList.innerHTML = '<li>Không có result files</li>';
+                return;
+            }
+            
+            resultFilesList.innerHTML = resultFiles.map(file => `
+                <li class="file-item">
+                    <div class="file-name">${file.name}</div>
+                    <div class="file-size">${formatFileSize(file.size)}</div>
+                    <a href="${file.url}" class="file-link" target="_blank">Tải xuống</a>
+                </li>
+            `).join('');
+        }
+        
+        function displayWorkspaceFiles(workspaceFiles) {
+            const workspaceFilesList = document.getElementById('workspaceFilesList');
+            
+            if (!workspaceFiles || workspaceFiles.length === 0) {
+                workspaceFilesList.innerHTML = '<li>Không có workspace files</li>';
+                return;
+            }
+            
+            workspaceFilesList.innerHTML = workspaceFiles.map(file => `
+                <li class="file-item">
+                    <div class="file-name">${file}</div>
+                </li>
+            `).join('');
+        }
+        
+        function displayConsoleLog(consoleLog) {
+            const consoleLogDiv = document.getElementById('consoleLog');
+            
+            if (!consoleLog) {
+                consoleLogDiv.textContent = 'Không có console log';
+                return;
+            }
+            
+            consoleLogDiv.textContent = consoleLog;
+        }
+        
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+    </script>
+</body>
+</html> 

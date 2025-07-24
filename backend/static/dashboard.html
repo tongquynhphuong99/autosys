@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TestOps - Dashboard</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f7fa;
+            min-height: 100vh;
+        }
+        
+        /* Header/Navigation */
+        .header {
+            background: white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        
+        .nav-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 70px;
+        }
+        
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .nav-menu {
+            display: flex;
+            gap: 5px;
+        }
+        
+        .nav-item {
+            padding: 12px 20px;
+            border-radius: 8px;
+            text-decoration: none;
+            color: #666;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .nav-item:hover {
+            background: #f0f2f5;
+            color: #333;
+        }
+        
+        .nav-item.active {
+            background: #667eea;
+            color: white;
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        
+        .user-details {
+            text-align: right;
+        }
+        
+        .user-name {
+            font-weight: 600;
+            color: #333;
+            font-size: 14px;
+        }
+        
+        .user-role {
+            font-size: 12px;
+            color: #666;
+        }
+        
+        .logout-btn {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.3s ease;
+        }
+        
+        .logout-btn:hover {
+            background: #c82333;
+        }
+        
+        /* Main Content */
+        .main-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 30px 20px;
+        }
+        
+        .page-title {
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 2em;
+            font-weight: 600;
+        }
+        
+        /* Dashboard Stats */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 25px;
+            margin-bottom: 40px;
+        }
+        
+        .stat-card {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            transition: all 0.3s ease;
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+        }
+        
+        .stat-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        
+        .stat-icon {
+            font-size: 2em;
+            width: 60px;
+            height: 60px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+        }
+        
+        .stat-info h3 {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 5px;
+        }
+        
+        .stat-info p {
+            color: #666;
+            font-size: 14px;
+        }
+        
+        .stat-value {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #667eea;
+            text-align: center;
+        }
+        
+        /* Recent Activity */
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: 2fr 1fr;
+            gap: 30px;
+        }
+        
+        .recent-projects {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        }
+        
+        .section-title {
+            font-size: 1.3em;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .project-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+        
+        .project-item {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding: 15px;
+            border-radius: 10px;
+            background: #f8f9fa;
+            transition: all 0.3s ease;
+        }
+        
+        .project-item:hover {
+            background: #e9ecef;
+        }
+        
+        .project-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 8px;
+            background: #667eea;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2em;
+        }
+        
+        .project-info h4 {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 5px;
+        }
+        
+        .project-info p {
+            font-size: 12px;
+            color: #666;
+        }
+        
+        .quick-actions {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        }
+        
+        .action-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        
+        .action-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 15px;
+            border-radius: 8px;
+            background: #f8f9fa;
+            text-decoration: none;
+            color: #333;
+            transition: all 0.3s ease;
+        }
+        
+        .action-item:hover {
+            background: #667eea;
+            color: white;
+            transform: translateX(5px);
+        }
+        
+        .action-icon {
+            font-size: 1.2em;
+        }
+        
+        /* Responsive */
+        @media (max-width: 768px) {
+            .nav-container {
+                flex-direction: column;
+                height: auto;
+                padding: 15px 20px;
+                gap: 15px;
+            }
+            
+            .nav-menu {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+            
+            .dashboard-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+        
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <!-- Header Navigation -->
+    <div class="header">
+        <div class="nav-container">
+            <div class="logo">
+                🚀 TestOps
+            </div>
+            
+            <nav class="nav-menu">
+                <a href="/" class="nav-item active">📊 Dashboard</a>
+                <a href="/projects" class="nav-item">📁 Projects</a>
+                <a href="/tests" class="nav-item">🧪 Tests</a>
+                <a href="/executions" class="nav-item">▶️ Executions</a>
+                <a href="/plans" class="nav-item">📋 Plans</a>
+                <a href="/cicd" class="nav-item">🔄 CI/CD</a>
+                <a href="/reports" class="nav-item">📈 Reports</a>
+                <a href="/logs" class="nav-item">📝 Logs</a>
+            </nav>
+            
+            <div class="user-info">
+                <div class="user-details">
+                    <div class="user-name" id="userName">Loading...</div>
+                    <div class="user-role">Administrator</div>
+                </div>
+                <button class="logout-btn">🚪 Logout</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Main Content -->
+    <div class="main-container">
+        <h1 class="page-title">📊 Dashboard</h1>
+        
+        <!-- Stats Cards -->
+        <div class="stats-grid">
+            <div class="stat-card">
+                <div class="stat-header">
+                    <div class="stat-icon" style="background: #28a745;">📁</div>
+                    <div class="stat-info">
+                        <h3>Active Projects</h3>
+                        <p>Currently running projects</p>
+                    </div>
+                </div>
+                <div class="stat-value" id="activeProjects">4</div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-header">
+                    <div class="stat-icon" style="background: #17a2b8;">🧪</div>
+                    <div class="stat-info">
+                        <h3>Total Test Cases</h3>
+                        <p>All test cases in system</p>
+                    </div>
+                </div>
+                <div class="stat-value" id="totalTestCases">120</div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-header">
+                    <div class="stat-icon" style="background: #ffc107;">▶️</div>
+                    <div class="stat-info">
+                        <h3>Tasks Today</h3>
+                        <p>Test runs completed today (Executions + Plans + CI/CD)</p>
+                    </div>
+                </div>
+                <div class="stat-value" id="executionsToday">23</div>
+            </div>
+            
+            <div class="stat-card">
+                <div class="stat-header">
+                    <div class="stat-icon" style="background: #dc3545;">📈</div>
+                    <div class="stat-info">
+                        <h3>Success Rate</h3>
+                        <p>Overall test success rate</p>
+                    </div>
+                </div>
+                <div class="stat-value" id="successRate">87%</div>
+            </div>
+        </div>
+        
+        <!-- Dashboard Content -->
+        <div class="dashboard-grid">
+            <div class="recent-projects">
+                <h2 class="section-title">📁 Recent Projects</h2>
+                <div class="project-list" id="recentProjects">
+                    <div class="loading">
+                        <div class="spinner"></div>
+                        <p>Loading projects...</p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="quick-actions">
+                <h2 class="section-title">⚡ Quick Actions</h2>
+                <div class="action-list">
+                    <a href="/api/projects/page" class="action-item">
+                        <span class="action-icon">➕</span>
+                        <span>Create New Project</span>
+                    </a>
+                    <a href="/tests" class="action-item">
+                        <span class="action-icon">🧪</span>
+                        <span>View Test Cases</span>
+                    </a>
+                    <a href="/executions" class="action-item">
+                        <span class="action-icon">▶️</span>
+                        <span>Run Test</span>
+                    </a>
+                    <a href="/reports" class="action-item">
+                        <span class="action-icon">📊</span>
+                        <span>Generate Report</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        // API base URLs
+        const API_BASE = '/api';
+        const PROJECTS_API = `${API_BASE}/projects`;
+        
+        let projects = [];
+        
+        // Load dashboard data
+        async function loadDashboardData() {
+            try {
+                // Load dashboard stats
+                const dashboardResponse = await fetch(`${API_BASE}/dashboard`);
+                if (dashboardResponse.ok) {
+                    const dashboardData = await dashboardResponse.json();
+                    updateStats(dashboardData);
+                } else {
+                    throw new Error('Failed to load dashboard stats');
+                }
+                
+                // Load projects for recent projects section
+                const projectsResponse = await fetch(PROJECTS_API);
+                if (projectsResponse.ok) {
+                    projects = await projectsResponse.json();
+                    displayRecentProjects();
+                } else {
+                    throw new Error('Failed to load projects');
+                }
+            } catch (error) {
+                console.error('Error loading dashboard data:', error);
+                document.getElementById('recentProjects').innerHTML = `
+                    <div class="loading">
+                        <p>❌ Lỗi tải dữ liệu. Vui lòng thử lại sau.</p>
+                    </div>
+                `;
+            }
+        }
+        
+        // Display recent projects (latest 5)
+        function displayRecentProjects() {
+            const container = document.getElementById('recentProjects');
+            
+            if (projects.length === 0) {
+                container.innerHTML = `
+                    <div class="loading">
+                        <p>📭 Chưa có dự án nào</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            // Sort by created_at descending and take latest 5
+            const recentProjects = projects
+                .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+                .slice(0, 5);
+            
+            container.innerHTML = recentProjects.map(project => `
+                <div class="project-item">
+                    <div class="project-icon">
+                        📁
+                    </div>
+                    <div class="project-info">
+                        <h4>${project.name}</h4>
+                        <p>${project.description}</p>
+                        <p style="font-size: 11px; color: #888; margin-top: 3px;">
+                            👨‍💼 ${project.project_manager || 'Chưa có PM'} • 
+                            👥 ${project.members ? project.members.length : 0} members • 
+                            📅 ${formatDate(project.created_at)}
+                        </p>
+                    </div>
+                </div>
+            `).join('');
+        }
+        
+        // Update dashboard stats
+        function updateStats(dashboardData) {
+            // Active projects count
+            document.getElementById('activeProjects').textContent = dashboardData.active_projects || 0;
+            
+            // Total test cases
+            document.getElementById('totalTestCases').textContent = dashboardData.total_testcases || 0;
+            
+            // Tasks today (bao gồm executions, plans, CI/CD)
+            document.getElementById('executionsToday').textContent = dashboardData.total_tasks_today || 0;
+            
+            // Success rate
+            document.getElementById('successRate').textContent = `${dashboardData.success_rate || 0}%`;
+        }
+        
+        // Format date
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            // Chuyển đổi từ UTC sang múi giờ Việt Nam (+7)
+            const vietnamTime = new Date(date.getTime() + (7 * 60 * 60 * 1000));
+            return vietnamTime.toLocaleDateString('vi-VN', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                timeZone: 'Asia/Ho_Chi_Minh'
+            });
+        }
+        
+        // Check authentication
+        function checkAuth() {
+            const token = localStorage.getItem('testops_token');
+            if (!token) {
+                window.location.href = '/login';
+                return;
+            }
+            
+            // Get user info
+            fetch(`${API_BASE}/auth/me`, {
+                headers: {
+                    'Authorization': 'Bearer ' + token
+                }
+            })
+            .then(response => {
+                if (response.ok) {
+                    return response.json();
+                } else {
+                    throw new Error('Token invalid');
+                }
+            })
+            .then(data => {
+                document.getElementById('userName').textContent = data.full_name;
+            })
+            .catch(error => {
+                console.error('Auth check failed:', error);
+                localStorage.removeItem('testops_token');
+                localStorage.removeItem('testops_user');
+                window.location.href = '/login';
+            });
+        }
+        
+        // Logout function
+        function logout() {
+            localStorage.removeItem('testops_token');
+            localStorage.removeItem('testops_user');
+            window.location.href = '/login';
+        }
+        
+        // Add event listeners
+        document.addEventListener('DOMContentLoaded', function() {
+            // Add logout button event
+            document.querySelector('.logout-btn').addEventListener('click', logout);
+            
+            // Initialize dashboard
+            checkAuth();
+            loadDashboardData();
+        });
+    </script>
+</body>
+</html> 

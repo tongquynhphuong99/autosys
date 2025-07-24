@@ -1,0 +1,72 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15
+    container_name: testops_postgres
+    environment:
+      POSTGRES_DB: testops
+      POSTGRES_USER: testops_user
+      POSTGRES_PASSWORD: testops_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+      - ./database/init.sql:/docker-entrypoint-initdb.d/02-init.sql
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U testops_user -d testops"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  jenkins:
+    build: ./jenkins
+    container_name: testops_jenkins
+    user: root
+    environment:
+      - JENKINS_OPTS=--httpPort=8080
+      - JAVA_OPTS=-Djenkins.install.runSetupWizard=false
+    ports:
+      - "8080:8080"
+      - "50000:50000"
+    volumes:
+      - ./jenkins-data:/var/jenkins_home
+      - /var/run/docker.sock:/var/run/docker.sock
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/login"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+
+  backend:
+    build: ./backend
+    container_name: testops_backend
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql://testops_user:testops_password@postgres:5432/testops
+      - JENKINS_URL=http://jenkins:8080
+      - JENKINS_USER=
+      - JENKINS_TOKEN=
+      - NGROK_URL=https://e0cb1b61cd4d.ngrok-free.app
+    depends_on:
+      postgres:
+        condition: service_healthy
+      jenkins:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
+    restart: unless-stopped
+
+  robot-runner:
+    image: demopq/robot-python-sele-chor:phuongttq
+    container_name: testops_robot_runner
+    command: ["sleep", "infinity"]
+    restart: unless-stopped
+
+volumes:
+  postgres_data: 

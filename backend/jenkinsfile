@@ -1,0 +1,37 @@
+pipeline {
+    agent {
+        docker {
+            image 'demopq/robot-python-sele-chor:phuongttq'
+            args '-u root'
+        }
+    }
+    stages {
+        stage('Run Robot Tests') {
+            steps {
+                sh '''
+                    mkdir -p results
+                    robot --outputdir results Bases/Testcase/login.robot
+                '''
+            }
+        }
+        stage('Process Results') {
+            steps {
+                robot outputPath: 'results'
+                sh '''
+                    tar czf results.tar.gz -C results .
+                '''
+            }
+        }
+    }
+    post {
+        success {
+            .......
+        }
+        failure {
+            ...
+        }
+        aborted {
+           ...
+        }
+    }
+} 

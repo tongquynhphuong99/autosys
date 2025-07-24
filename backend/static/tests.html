@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TestOps - Tests</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f7fa;
+            min-height: 100vh;
+        }
+        .header {
+            background: white;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .nav-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            height: 70px;
+        }
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .nav-menu {
+            display: flex;
+            gap: 5px;
+        }
+        .nav-item {
+            padding: 12px 20px;
+            border-radius: 8px;
+            text-decoration: none;
+            color: #666;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .nav-item:hover {
+            background: #f0f2f5;
+            color: #333;
+        }
+        .nav-item.active {
+            background: #667eea;
+            color: white;
+        }
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+        .user-details {
+            text-align: right;
+        }
+        .user-name {
+            font-weight: 600;
+            color: #333;
+            font-size: 14px;
+        }
+        .user-role {
+            font-size: 12px;
+            color: #666;
+        }
+        .logout-btn {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.3s ease;
+        }
+        .logout-btn:hover {
+            background: #c82333;
+        }
+        .main-container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 30px 20px;
+        }
+        .page-title {
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 2em;
+            font-weight: 600;
+        }
+        .controls {
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            align-items: center;
+        }
+        .controls select, .controls button {
+            padding: 12px;
+            border-radius: 8px;
+            border: 2px solid #e1e5e9;
+            font-size: 16px;
+        }
+        .controls button {
+            background: #667eea;
+            color: white;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .controls button:hover {
+            background: #5a6fd8;
+        }
+        .tests-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+            overflow: hidden;
+        }
+        .tests-table th, .tests-table td {
+            padding: 16px 12px;
+            text-align: left;
+        }
+        .tests-table th {
+            background: #f0f2f5;
+            color: #333;
+            font-weight: 600;
+        }
+        .tests-table tr:not(:last-child) {
+            border-bottom: 1px solid #e1e5e9;
+        }
+        .tests-table td {
+            color: #555;
+        }
+        .test-status {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            background: #d4edda;
+            color: #155724;
+        }
+        .test-priority {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+        .action-btn {
+            padding: 8px 16px;
+            border-radius: 8px;
+            border: none;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-right: 8px;
+            transition: all 0.3s ease;
+        }
+        .btn-edit {
+            background: #ffc107;
+            color: #333;
+        }
+        .btn-edit:hover {
+            background: #e0a800;
+        }
+        .btn-delete {
+            background: #dc3545;
+            color: white;
+        }
+        .btn-delete:hover {
+            background: #c82333;
+        }
+        .btn-add {
+            background: #28a745;
+            color: white;
+        }
+        .btn-add:hover {
+            background: #218838;
+        }
+        .empty-state {
+            text-align: center;
+            color: #888;
+            padding: 60px 20px;
+        }
+        /* Modal Styles giống projects */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            backdrop-filter: blur(5px);
+        }
+        .modal-content {
+            background: white;
+            margin: 5% auto;
+            padding: 0;
+            border-radius: 15px;
+            width: 90%;
+            max-width: 600px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            animation: modalSlideIn 0.3s ease-out;
+        }
+        @keyframes modalSlideIn {
+            from { opacity: 0; transform: translateY(-50px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .modal-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px 30px;
+            border-radius: 15px 15px 0 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .modal-header h2 { margin: 0; font-size: 1.5em; }
+        .close { color: white; font-size: 28px; font-weight: bold; cursor: pointer; transition: all 0.3s ease; }
+        .close:hover { opacity: 0.7; }
+        .modal form { padding: 30px; }
+        .modal .form-group { display: flex; flex-direction: column; margin-bottom: 18px; }
+        .modal .form-group label { margin-bottom: 8px; font-weight: 600; color: #333; font-size: 14px; }
+        .modal .form-group input, .modal .form-group select, .modal .form-group textarea {
+            padding: 12px;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s ease;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .modal .form-actions { text-align: right; margin-top: 10px; }
+        .modal .btn-secondary { background: #6c757d; color: white; }
+        .modal .btn-secondary:hover { background: #5a6268; }
+        /* Robot Files Styles */
+        .project-info {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            margin-bottom: 25px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        }
+        
+        .project-info h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 1.4em;
+        }
+        
+        .project-info p {
+            margin-bottom: 10px;
+            color: #555;
+        }
+        
+        .project-info a {
+            color: #667eea;
+            text-decoration: none;
+        }
+        
+        .project-info a:hover {
+            text-decoration: underline;
+        }
+        
+        .test-count {
+            background: #667eea;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        
+        .robot-files-section {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        }
+        
+        .robot-files-section h4 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.2em;
+        }
+        
+        .robot-files-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+            gap: 20px;
+        }
+        
+        .robot-file-card {
+            border: 2px solid #e1e5e9;
+            border-radius: 12px;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            transition: all 0.3s ease;
+        }
+        
+        .robot-file-card:hover {
+            border-color: #667eea;
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.1);
+        }
+        
+        .file-icon {
+            font-size: 2em;
+            color: #667eea;
+        }
+        
+        .file-info {
+            flex: 1;
+        }
+        
+        .file-name {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 5px;
+            font-size: 16px;
+        }
+        
+        .file-path {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 10px;
+            word-break: break-all;
+        }
+        
+        .file-stats {
+            display: flex;
+            gap: 15px;
+            font-size: 12px;
+        }
+        
+        .file-stats .test-count {
+            background: #28a745;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 12px;
+        }
+        
+        .file-stats .file-size {
+            color: #666;
+            background: #f8f9fa;
+            padding: 2px 8px;
+            border-radius: 12px;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 60px 20px;
+            color: #666;
+        }
+        
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        @media (max-width: 768px) {
+            .main-container { padding: 10px; }
+            .modal-content { width: 98%; margin: 10% auto; }
+            .robot-files-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="nav-container">
+            <div class="logo">🚀 TestOps</div>
+            <nav class="nav-menu">
+                <a href="/" class="nav-item">📊 Dashboard</a>
+                <a href="/projects" class="nav-item">📁 Projects</a>
+                <a href="/tests" class="nav-item active">🧪 Tests</a>
+                <a href="/executions" class="nav-item">▶️ Executions</a>
+                <a href="/plans" class="nav-item">📋 Plans</a>
+                <a href="/cicd" class="nav-item">🔄 CI/CD</a>
+                <a href="/reports" class="nav-item">📈 Reports</a>
+                <a href="/logs" class="nav-item">📝 Logs</a>
+            </nav>
+            <div class="user-info">
+                <div class="user-details">
+                    <div class="user-name" id="userName">Loading...</div>
+                    <div class="user-role">Administrator</div>
+                </div>
+                <button class="logout-btn">🚪 Logout</button>
+            </div>
+        </div>
+    </div>
+    <div class="main-container">
+        <div class="page-title">🤖 Quản lý Robot Files</div>
+        <div class="controls">
+            <label for="projectSelect">Chọn dự án:</label>
+            <select id="projectSelect"></select>
+            <button class="btn-add">👁️ Xem Testcase</button>
+        </div>
+        <div id="testsContainer">
+            <div class="empty-state">Vui lòng chọn dự án và nhấn "Xem Testcase" để xem robot files.</div>
+        </div>
+    </div>
+    <script>
+        // API base URLs
+        const API_BASE = '/api';
+        const PROJECTS_API = `${API_BASE}/projects`;
+        const ROBOT_FILES_API = `${API_BASE}/projects`;
+        
+        let projects = [];
+        let testcases = [];
+        let currentProjectId = null;
+        
+        // Load all projects for selection
+        async function loadProjects() {
+            try {
+                const response = await fetch(PROJECTS_API);
+                if (response.ok) {
+                    projects = await response.json();
+                    renderProjectOptions();
+                } else {
+                    throw new Error('Failed to load projects');
+                }
+            } catch (error) {
+                console.error('Error loading projects:', error);
+                document.getElementById('testsContainer').innerHTML = `<div class="loading"><p>❌ Lỗi tải dự án</p></div>`;
+            }
+        }
+        
+        // Render project options in select
+        function renderProjectOptions() {
+            const select = document.getElementById('projectSelect');
+            select.innerHTML = '<option value="">-- Chọn dự án --</option>' +
+                projects.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+        }
+        
+        // Load testcases for selected project
+        async function loadTestcases(projectId) {
+            if (!projectId) {
+                document.getElementById('testsContainer').innerHTML = '<div class="empty-state">Vui lòng chọn dự án và nhấn "Xem Testcase" để xem robot files.</div>';
+                return;
+            }
+            
+            // Set current project ID
+            currentProjectId = projectId;
+            
+            document.getElementById('testsContainer').innerHTML = `
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <p>Đang tải testcase từ GitHub...</p>
+                </div>
+            `;
+            
+            try {
+                const response = await fetch(`${ROBOT_FILES_API}/${projectId}/robot-files`);
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('Response data:', data); // Debug log
+                    testcases = data.robot_files || [];
+                    renderTestcases(data);
+                } else {
+                    const errorText = await response.text();
+                    throw new Error(`HTTP ${response.status}: ${errorText}`);
+                }
+            } catch (error) {
+                console.error('Error loading testcase:', error);
+                document.getElementById('testsContainer').innerHTML = `
+                    <div class="loading">
+                        <p>❌ Lỗi tải testcase: ${error.message}</p>
+                        <p>Vui lòng kiểm tra:</p>
+                        <ul style="text-align: left; max-width: 400px; margin: 10px auto;">
+                            <li>Project có repository link không</li>
+                            <li>Repository có file .robot không</li>
+                            <li>Repository có public không</li>
+                        </ul>
+                    </div>
+                `;
+            }
+        }
+        
+        // Render testcases
+        function renderTestcases(data) {
+            const container = document.getElementById('testsContainer');
+            const currentProject = projects.find(p => p.id == currentProjectId);
+            
+            console.log('renderTestcases - data:', data);
+            console.log('renderTestcases - currentProjectId:', currentProjectId);
+            console.log('renderTestcases - currentProject:', currentProject);
+            console.log('renderTestcases - projects:', projects);
+            
+            // Kiểm tra data có tồn tại không
+            if (!data) {
+                container.innerHTML = '<div class="loading"><p>❌ Lỗi: Không nhận được dữ liệu từ API</p></div>';
+                return;
+            }
+            
+            if (!currentProject) {
+                container.innerHTML = `<div class="loading"><p>❌ Lỗi: Không tìm thấy dự án với ID ${currentProjectId}</p></div>`;
+                return;
+            }
+            
+            if (!testcases.length) {
+                container.innerHTML = `
+                    <div class="project-info">
+                        <h3>📁 ${currentProject.name}</h3>
+                        <p>Chưa có file .robot nào trong repository.</p>
+                        <p><strong>Repository:</strong> <a href="${data.repo_url || '#'}" target="_blank">${data.repo_url || 'Không có link'}</a></p>
+                    </div>
+                `;
+                return;
+            }
+            
+            container.innerHTML = `
+                <div class="project-info">
+                    <h3>📁 ${currentProject.name}</h3>
+                    <p><strong>Repository:</strong> <a href="${data.repo_url || '#'}" target="_blank">${data.repo_url || 'Không có link'}</a></p>
+                    <p>Tổng số test cases: <span class="test-count">${data.total_testcases || 0}</span></p>
+                </div>
+                <div class="robot-files-section">
+                    <h4>🤖 Robot Files</h4>
+                    <div class="robot-files-grid">
+                        ${testcases.map(file => `
+                            <div class="robot-file-card">
+                                <div class="file-icon">🤖</div>
+                                <div class="file-info">
+                                    <div class="file-name">${file.name || 'Unknown'}</div>
+                                    <div class="file-path">${file.path || 'Unknown path'}</div>
+                                    <div class="file-stats">
+                                        <span class="test-count">${file.test_count || 0} test cases</span>
+                                        <span class="file-size">${file.size || 'Unknown size'}</span>
+                                    </div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+        
+        // View testcase button event
+        document.querySelector('.btn-add').addEventListener('click', function() {
+            const projectId = document.getElementById('projectSelect').value;
+            if (projectId) {
+                loadTestcases(projectId);
+            } else {
+                alert('Vui lòng chọn dự án trước!');
+            }
+        });
+        
+
+        
+        // Project selection change event
+        document.getElementById('projectSelect').addEventListener('change', function() {
+            const projectId = this.value;
+            if (projectId) {
+                currentProjectId = projectId;
+                // Reset container to show project is selected
+                document.getElementById('testsContainer').innerHTML = `
+                    <div class="empty-state">
+                        <p>✅ Đã chọn dự án: ${this.options[this.selectedIndex].text}</p>
+                        <p>Nhấn "👁️ Xem Testcase" để tải robot files từ GitHub.</p>
+                    </div>
+                `;
+            } else {
+                currentProjectId = null;
+                document.getElementById('testsContainer').innerHTML = '<div class="empty-state">Vui lòng chọn dự án và nhấn "Xem Testcase" để xem robot files.</div>';
+            }
+        });
+        
+        // Check authentication
+        function checkAuth() {
+            const token = localStorage.getItem('testops_token');
+            if (!token) {
+                window.location.href = '/login';
+                return;
+            }
+            fetch(`${API_BASE}/auth/me`, {
+                headers: { 'Authorization': 'Bearer ' + token }
+            })
+            .then(response => response.ok ? response.json() : Promise.reject())
+            .then(data => {
+                document.getElementById('userName').textContent = data.full_name;
+            })
+            .catch(() => {
+                localStorage.removeItem('testops_token');
+                localStorage.removeItem('testops_user');
+                window.location.href = '/login';
+            });
+        }
+        
+        // Logout function
+        function logout() {
+            localStorage.removeItem('testops_token');
+            localStorage.removeItem('testops_user');
+            window.location.href = '/login';
+        }
+        
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelector('.logout-btn').addEventListener('click', logout);
+            checkAuth();
+            loadProjects();
+        });
+    </script>
+</body>
+</html> 
