@@ -4,7 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TestOps - Plans</title>
+    <link rel="stylesheet" href="/static/notification-component.css">
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: #f5f7fa;
@@ -241,9 +248,9 @@
             text-overflow: ellipsis;
         }
         .executions-table td.actions-col {
-            min-width: 280px;
+            min-width: 300px;
+            max-width: 340px;
             white-space: nowrap;
-            text-align: center;
         }
         .executions-table th {
             background: #f0f2f5;
@@ -291,14 +298,16 @@
             color: #004085;
         }
         .action-btn {
-            padding: 6px 12px;
-            border-radius: 6px;
+            padding: 10px 18px;
+            border-radius: 8px;
             border: none;
-            font-size: 11px;
+            font-size: 12px;
             font-weight: 600;
             cursor: pointer;
-            margin-right: 4px;
+            margin-right: 12px;
             transition: all 0.3s ease;
+            min-width: 85px;
+            text-align: center;
         }
         .btn-run {
             background: #17a2b8;
@@ -1319,5 +1328,6 @@
             loadJenkinsJobsForPlans();
         });
     </script>
+    <script src="/static/notification-component.js"></script>
 </body>
 </html> 

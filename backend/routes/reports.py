@@ -1,4 +1,4 @@
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Request, Depends
 from fastapi.responses import HTMLResponse, StreamingResponse
 import requests
 import os
@@ -7,7 +7,7 @@ from typing import Dict, List, Optional
 from datetime import datetime, timedelta
 from sqlalchemy import func, and_, Integer, text
 from sqlalchemy.orm import Session
-from database import get_db, Project, Execution, TestCase, Report
+from database import get_db, Project, Execution, TestCase, Report, Notification
 from routes.log import log_backend_event
 
 # Helper functions for webhook processing
@@ -108,6 +108,19 @@ def process_plan_webhook(plan, job_name, build_number, build_result, body, db):
         print(f"✅ Webhook: Đã lưu report cho plan '{plan.plan_name}' - Build #{build_number}")
         
         log_backend_event("INFO", f"Webhook: Saved report for plan '{plan.plan_name}' - Build #{build_number}", db)
+        
+        # Tạo thông báo cho plan
+        try:
+            create_notification(
+                task_id=plan.plan_id,
+                task_name=plan.plan_name,
+                task_type='plan',
+                status=build_result.lower() if build_result else 'completed',
+                project_name=project.name,
+                db=db
+            )
+        except Exception as e:
+            print(f"[WARNING] Failed to create notification for plan: {e}")
         
         return {
             "message": f"Đã lưu report cho plan '{plan.plan_name}' thành công",
@@ -231,6 +244,19 @@ def process_execution_webhook(execution, job_name, build_number, build_result, b
         
         log_backend_event("INFO", f"Webhook: Saved report for execution '{execution.task_name}' - Build #{build_number}", db)
         
+        # Tạo thông báo cho execution
+        try:
+            create_notification(
+                task_id=execution.task_id,
+                task_name=execution.task_name,
+                task_type='execution',
+                status=build_result.lower() if build_result else 'completed',
+                project_name=project.name,
+                db=db
+            )
+        except Exception as e:
+            print(f"[WARNING] Failed to create notification for execution: {e}")
+        
         return {
             "message": f"Đã lưu report cho execution '{execution.task_name}' thành công",
             "report_id": report.id,
@@ -352,6 +378,19 @@ def process_cicd_webhook(cicd, job_name, build_number, build_result, body, db):
         print(f"✅ Webhook: Đã lưu report cho CI/CD '{cicd.cicd_name}' - Build #{build_number}")
         
         log_backend_event("INFO", f"Webhook: Saved report for CI/CD '{cicd.cicd_name}' - Build #{build_number}", db)
+        
+        # Tạo thông báo cho CI/CD
+        try:
+            create_notification(
+                task_id=cicd.cicd_id,
+                task_name=cicd.cicd_name,
+                task_type='cicd',
+                status=build_result.lower() if build_result else 'completed',
+                project_name=project.name,
+                db=db
+            )
+        except Exception as e:
+            print(f"[WARNING] Failed to create notification for CI/CD: {e}")
         
         return {
             "message": f"Đã lưu report cho CI/CD '{cicd.cicd_name}' thành công",
@@ -1778,4 +1817,165 @@ def get_history_reports(
             db.close()
     except Exception as e:
         print(f"[DEBUG] Error getting history reports: {e}")
-        raise HTTPException(status_code=500, detail=f"Internal server error: {e}") 
+        raise HTTPException(status_code=500, detail=f"Internal server error: {e}")
+
+def get_time_ago(created_at: datetime) -> str:
+    """Tính thời gian đã trôi qua từ khi tạo thông báo"""
+    if not created_at:
+        return "Unknown"
+    
+    now = datetime.utcnow()
+    diff = now - created_at
+    
+    if diff.days > 0:
+        return f"{diff.days} ngày trước"
+    elif diff.seconds >= 3600:
+        hours = diff.seconds // 3600
+        return f"{hours} giờ trước"
+    elif diff.seconds >= 60:
+        minutes = diff.seconds // 60
+        return f"{minutes} phút trước"
+    else:
+        return "Vừa xong"
+
+def create_notification(
+    task_id: str,
+    task_name: str,
+    task_type: str,
+    status: str,
+    project_name: str = None,
+    db: Session = None
+):
+    """Tạo thông báo mới khi có report được gửi về"""
+    try:
+        # Tạo message thông báo
+        if status.lower() == "success":
+            message = f"✅ Report của {task_id} ({task_name}) đã hoàn thành thành công"
+        elif status.lower() == "failure":
+            message = f"❌ Report của {task_id} ({task_name}) đã thất bại"
+        elif status.lower() == "aborted":
+            message = f"⏹️ Report của {task_id} ({task_name}) đã bị hủy"
+        else:
+            message = f"📊 Report của {task_id} ({task_name}) đã hoàn thành"
+        
+        # Tạo notification mới
+        notification = Notification(
+            task_id=task_id,
+            task_name=task_name,
+            task_type=task_type,
+            status=status,
+            project_name=project_name,
+            message=message,
+            created_at=datetime.utcnow()
+        )
+        
+        db.add(notification)
+        db.commit()
+        db.refresh(notification)
+        
+        return notification
+        
+    except Exception as e:
+        db.rollback()
+        print(f"Lỗi tạo thông báo: {str(e)}")
+        return None
+
+# Notification API endpoints
+@router.get("/notifications/list")
+def get_notifications(
+    limit: int = 50,
+    unread_only: bool = False,
+    db: Session = Depends(get_db)
+):
+    """Lấy danh sách thông báo"""
+    try:
+        query = db.query(Notification)
+        
+        if unread_only:
+            query = query.filter(Notification.is_read == False)
+        
+        notifications = query.order_by(Notification.created_at.desc()).limit(limit).all()
+        
+        result = []
+        for notification in notifications:
+            result.append({
+                "id": notification.id,
+                "task_id": notification.task_id,
+                "task_name": notification.task_name,
+                "task_type": notification.task_type,
+                "status": notification.status,
+                "project_name": notification.project_name,
+                "message": notification.message,
+                "created_at": notification.created_at.isoformat() if notification.created_at else None,
+                "is_read": notification.is_read,
+                "time_ago": get_time_ago(notification.created_at) if notification.created_at else "Unknown"
+            })
+        
+        return {
+            "notifications": result,
+            "total": len(result),
+            "unread_count": db.query(Notification).filter(Notification.is_read == False).count()
+        }
+        
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Lỗi lấy danh sách thông báo: {str(e)}")
+
+@router.put("/notifications/{notification_id}/read")
+def mark_as_read(notification_id: int, db: Session = Depends(get_db)):
+    """Đánh dấu thông báo đã đọc"""
+    try:
+        notification = db.query(Notification).filter(Notification.id == notification_id).first()
+        if not notification:
+            raise HTTPException(status_code=404, detail="Thông báo không tồn tại")
+        
+        notification.is_read = True
+        notification.read_at = datetime.utcnow()
+        db.commit()
+        
+        return {
+            "message": "Đã đánh dấu thông báo đã đọc",
+            "notification_id": notification_id
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Lỗi đánh dấu thông báo: {str(e)}")
+
+@router.put("/notifications/read-all")
+def mark_all_as_read(db: Session = Depends(get_db)):
+    """Đánh dấu tất cả thông báo đã đọc"""
+    try:
+        db.query(Notification).filter(Notification.is_read == False).update({
+            "is_read": True,
+            "read_at": datetime.utcnow()
+        })
+        db.commit()
+        
+        return {
+            "message": "Đã đánh dấu tất cả thông báo đã đọc"
+        }
+        
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Lỗi đánh dấu thông báo: {str(e)}")
+
+@router.delete("/notifications/clear-all")
+def clear_all_notifications(db: Session = Depends(get_db)):
+    """Xóa tất cả thông báo"""
+    try:
+        count = db.query(Notification).count()
+        db.query(Notification).delete()
+        db.commit()
+        
+        return {
+            "message": f"Đã xóa {count} thông báo thành công",
+            "deleted_count": count
+        }
+        
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Lỗi xóa thông báo: {str(e)}")
+
+ 

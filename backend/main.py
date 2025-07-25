@@ -168,6 +168,8 @@ def cicd_page():
     except Exception as e:
         return HTMLResponse(content=f"<h1>Error loading CI/CD: {str(e)}</h1>", status_code=500)
 
+
+
 @app.get("/login", response_class=HTMLResponse)
 def login_page():
     """Serve the login page"""

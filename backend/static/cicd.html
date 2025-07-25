@@ -4,7 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TestOps - CI/CD Pipelines</title>
+    <link rel="stylesheet" href="/static/notification-component.css">
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             background: #f5f7fa;
@@ -184,6 +191,7 @@
             box-shadow: 0 5px 15px rgba(0,0,0,0.08);
             overflow: hidden;
             font-size: 13px;
+            min-width: 1200px;
         }
         .executions-table th, .executions-table td {
             padding: 16px 16px;
@@ -198,9 +206,38 @@
             max-width: 150px;
             word-wrap: break-word;
         }
+        .executions-table td.id-col {
+            max-width: 80px;
+            min-width: 80px;
+            white-space: nowrap;
+        }
+        .executions-table td.name-col {
+            max-width: 120px;
+            min-width: 120px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .executions-table td.type-col {
+            max-width: 80px;
+            min-width: 80px;
+            white-space: nowrap;
+        }
+        .executions-table td.jenkins-col {
+            max-width: 120px;
+            min-width: 120px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        .executions-table td.status-col {
+            max-width: 80px;
+            min-width: 80px;
+            white-space: nowrap;
+        }
         .executions-table td.description-col {
-            max-width: 280px;
-            min-width: 180px;
+            max-width: 250px;
+            min-width: 150px;
             word-wrap: break-word;
             white-space: normal;
         }
@@ -219,7 +256,7 @@
             text-overflow: ellipsis;
         }
         .executions-table td.project-col {
-            max-width: 120px;
+            max-width: 100px;
             min-width: 100px;
             white-space: nowrap;
             overflow: hidden;
@@ -228,8 +265,8 @@
             color: #1976d2;
         }
         .executions-table td.actions-col {
-            min-width: 420px;
-            max-width: 480px;
+            min-width: 300px;
+            max-width: 340px;
             white-space: nowrap;
         }
         .executions-table th {
@@ -278,15 +315,15 @@
             color: #ffffff;
         }
         .action-btn {
-            padding: 6px 10px;
-            border-radius: 6px;
+            padding: 10px 18px;
+            border-radius: 8px;
             border: none;
-            font-size: 11px;
+            font-size: 12px;
             font-weight: 600;
             cursor: pointer;
-            margin-right: 4px;
+            margin-right: 12px;
             transition: all 0.3s ease;
-            min-width: 65px;
+            min-width: 85px;
             text-align: center;
         }
         .btn-edit {
@@ -319,20 +356,6 @@
         }
         .action-btn:last-child {
             margin-right: 0;
-        }
-        .btn-run {
-            background: #17a2b8;
-            color: white;
-        }
-        .btn-run:hover {
-            background: #138496;
-        }
-        .btn-stop {
-            background: #dc3545;
-            color: white;
-        }
-        .btn-stop:hover {
-            background: #c82333;
         }
         .btn-stop.disabled {
             background: #6c757d;
@@ -628,13 +651,18 @@
                     container.innerHTML = '<div class="empty-state">Chưa có CI/CD nào cho dự án này.</div>';
                     return;
                 }
-                container.innerHTML = `<div style="overflow-x: auto;"><table class='executions-table'><thead><tr><th>ID</th><th>Tên CI/CD</th><th>Project</th><th>Loại</th><th>Mô tả</th><th>Jenkins Job</th><th>Trạng thái</th><th>Action</th></tr></thead><tbody>${data.cicd.map(item => {
+                container.innerHTML = `
+                    <div class="project-info" style="background: white; border-radius: 15px; padding: 25px; margin-bottom: 25px; box-shadow: 0 5px 15px rgba(0,0,0,0.08);">
+                        <h3>🚀 Tất cả CI/CD</h3>
+                        <p>Tổng số CI/CD: <span style="background: #667eea; color: white; padding: 4px 12px; border-radius: 20px; font-weight: 600;">${data.cicd.length}</span></p>
+                    </div>
+                    <div style="overflow-x: auto;"><table class='executions-table'><thead><tr><th class="id-col">ID</th><th class="name-col">Tên CI/CD</th><th class="project-col">Project</th><th class="type-col">Loại</th><th class="description-col">Mô tả</th><th class="jenkins-col">Jenkins Job</th><th class="status-col">Trạng thái</th><th class="actions-col">Action</th></tr></thead><tbody>${data.cicd.map(item => {
                     const isDeactive = item.status === 'deactive';
                     const stopButtonClass = isDeactive ? 'action-btn btn-stop disabled' : 'action-btn btn-stop';
                     const stopButtonDisabled = isDeactive ? 'disabled' : '';
                     const stopButtonOnclick = isDeactive ? '' : `onclick='stopCicd(${item.id})'`;
                     
-                    return `<tr><td><code style="background: #e8f5e8; color: #2e7d32; padding: 2px 6px; border-radius: 4px; font-size: 12px; font-weight: 600;">${item.cicd_id || item.id}</code></td><td>${item.cicd_name}</td><td class="project-col">${item.project_name || 'N/A'}</td><td>${item.cicd_type}</td><td>${item.description || '-'}</td><td>${item.jenkins_job}</td><td><span class="execution-status status-${item.status}">${getStatusText(item.status)}</span></td><td><button class='action-btn btn-run' onclick='runCicd(${item.id})'>▶️ Chạy</button><button class='${stopButtonClass}' ${stopButtonDisabled} ${stopButtonOnclick}>⏹️ Dừng</button><button class='action-btn btn-edit' onclick='editCicd(${item.id})'>✏️ Sửa</button><button class='action-btn btn-delete' onclick='deleteCicd(${item.id})'>🗑️ Xóa</button></td></tr>`;
+                    return `<tr><td class="id-col"><code style="background: #e8f5e8; color: #2e7d32; padding: 2px 6px; border-radius: 4px; font-size: 12px; font-weight: 600;">${item.cicd_id || item.id}</code></td><td class="name-col"><strong>${item.cicd_name}</strong></td><td class="project-col"><span style="background: #e3f2fd; color: #1976d2; padding: 4px 8px; border-radius: 12px; font-size: 12px; font-weight: 500;">${item.project_name || 'N/A'}</span></td><td class="type-col">${item.cicd_type}</td><td class="description-col">${item.description || '-'}</td><td class="jenkins-col"><code style="background: #f8f9fa; padding: 2px 6px; border-radius: 4px; font-size: 12px;">${item.jenkins_job || '-'}</code></td><td class="status-col"><span class="execution-status status-${item.status}">${getStatusText(item.status)}</span></td><td class="actions-col"><button class='action-btn btn-run' onclick='runCicd(${item.id})'>▶️ Chạy</button><button class='${stopButtonClass}' ${stopButtonDisabled} ${stopButtonOnclick}>⏹️ Dừng</button><button class='action-btn btn-edit' onclick='editCicd(${item.id})'>✏️ Sửa</button><button class='action-btn btn-delete' onclick='deleteCicd(${item.id})'>🗑️ Xóa</button></td></tr>`;
                 }).join('')}</tbody></table></div>`;
             } catch (e) {
                 container.innerHTML = `<div class='empty-state'>Lỗi tải danh sách CI/CD: ${e.message}</div>`;
@@ -998,5 +1026,6 @@
             // Không cần setTimeout(loadCicdList) nữa vì renderProjectOptions sẽ tự gọi
         });
     </script>
+    <script src="/static/notification-component.js"></script>
 </body>
 </html>

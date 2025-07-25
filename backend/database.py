@@ -136,6 +136,20 @@ class Cicd(Base):
     status = Column(String(20), default="initialized")
     created_at = Column(DateTime, default=datetime.utcnow)
 
+class Notification(Base):
+    __tablename__ = "notifications"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    task_id = Column(String(50), nullable=False)  # ID của task (TASK-001, PLAN-001, CICD-001)
+    task_name = Column(String(200), nullable=False)  # Tên của task
+    task_type = Column(String(20), nullable=False)  # Loại task (execution, plan, cicd)
+    status = Column(String(20), nullable=False)  # Trạng thái (success, failure, aborted)
+    project_name = Column(String(200))  # Tên project
+    message = Column(Text, nullable=False)  # Nội dung thông báo
+    is_read = Column(Boolean, default=False)  # Đã đọc chưa
+    read_at = Column(DateTime)  # Thời gian đọc
+    created_at = Column(DateTime, default=datetime.utcnow)  # Thời gian tạo
+
 # Create tables
 def create_tables():
     Base.metadata.create_all(bind=engine)
