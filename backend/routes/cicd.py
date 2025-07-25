@@ -205,7 +205,7 @@ def update_cicd(cicd_id: int, data: dict, db: Session = Depends(get_db)):
 
 @router.delete("/cicd/{cicd_id}")
 def delete_cicd(cicd_id: int, db: Session = Depends(get_db)):
-    """Xóa task CI/CD"""
+    """Xóa task CI/CD - disable GitHub webhook triggers trước khi xóa"""
     try:
         # Tìm task CI/CD
         cicd_task = db.query(Cicd).filter(Cicd.id == cicd_id).first()
@@ -220,13 +220,33 @@ def delete_cicd(cicd_id: int, db: Session = Depends(get_db)):
             "jenkins_job": cicd_task.jenkins_job
         }
         
+        # Disable GitHub webhook triggers trước khi xóa (nếu có Jenkins job)
+        jenkins_result = None
+        if cicd_task.jenkins_job:
+            try:
+                jenkins_result = disable_jenkins_webhook_trigger(cicd_task.jenkins_job)
+            except Exception as jenkins_error:
+                # Log lỗi nhưng vẫn tiếp tục xóa task
+                print(f"Warning: Không thể disable Jenkins triggers cho job '{cicd_task.jenkins_job}': {jenkins_error}")
+                jenkins_result = {
+                    "message": f"Không thể disable Jenkins triggers: {str(jenkins_error)}",
+                    "job_name": cicd_task.jenkins_job
+                }
+        
         # Xóa task khỏi database
         db.delete(cicd_task)
         db.commit()
         
+        # Tạo response message
+        message = f"Đã xóa thành công task CI/CD '{task_info['cicd_name']}' (ID: {task_info['cicd_id']})"
+        if jenkins_result:
+            message += f"\n\nJenkins: {jenkins_result['message']}"
+        
         return {
-            "message": f"Đã xóa thành công task CI/CD '{task_info['cicd_name']}' (ID: {task_info['cicd_id']})",
-            "deleted_task": task_info
+            "message": message,
+            "deleted_task": task_info,
+            "jenkins_action": "disabled_github_hook_trigger" if jenkins_result else "no_jenkins_job",
+            "jenkins_result": jenkins_result
         }
         
     except Exception as e:

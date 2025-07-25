@@ -790,11 +790,17 @@
         }
 
         async function deleteCicd(cicdId) {
-            if (!confirm('Bạn có chắc muốn xóa task CI/CD này?\n\nHành động này sẽ:\n- Xóa task khỏi database\n- Không thể hoàn tác')) {
+            if (!confirm('Bạn có chắc muốn xóa task CI/CD này?\n\nHành động này sẽ:\n- Disable GitHub webhook triggers\n- Xóa task khỏi database\n- Không thể hoàn tác')) {
                 return;
             }
             
             try {
+                // Disable button và hiển thị loading
+                const deleteBtn = event.target;
+                const originalText = deleteBtn.textContent;
+                deleteBtn.disabled = true;
+                deleteBtn.textContent = '⏳ Đang xóa...';
+                
                 const res = await fetch(`/api/cicd/cicd/${cicdId}`, {
                     method: 'DELETE',
                     headers: { 'Content-Type': 'application/json' }
@@ -807,14 +813,24 @@
                 
                 const result = await res.json();
                 
-                // Hiển thị thông báo thành công
-                alert(`✅ ${result.message}`);
+                // Hiển thị thông báo chi tiết
+                let message = `✅ ${result.message}`;
+                if (result.jenkins_action === 'disabled_github_hook_trigger') {
+                    message += `\n\n🔧 Jenkins: ${result.jenkins_result.message}`;
+                }
+                
+                alert(message);
                 
                 // Reload danh sách để cập nhật UI
                 loadCicdList();
                 
             } catch (error) {
                 alert(`❌ Lỗi xóa task CI/CD: ${error.message}`);
+            } finally {
+                // Restore button
+                const deleteBtn = event.target;
+                deleteBtn.disabled = false;
+                deleteBtn.textContent = originalText;
             }
         }
 
