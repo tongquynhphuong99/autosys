@@ -13,7 +13,11 @@
         
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            /* Gradient overlay + background image căn giữa, cách trên dưới */
+            background: linear-gradient(135deg, rgba(102,126,234,0.85) 0%, rgba(118,75,162,0.85) 100%), url('https://vinaphonetphcm.com/files/assets/md_vnpt_wifi.jpg') no-repeat center 10vh fixed;
+            background-size: auto 80vh;
+            background-repeat: no-repeat;
+            background-position: center 10vh;
             min-height: 100vh;
             display: flex;
             align-items: center;
@@ -24,20 +28,28 @@
             background: rgba(255, 255, 255, 0.95);
             backdrop-filter: blur(10px);
             border-radius: 20px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.12);
+            padding: 40px 32px 32px 32px;
             width: 100%;
             max-width: 400px;
             text-align: center;
+            position: relative;
         }
         
         .logo {
             font-size: 2.5em;
             font-weight: bold;
             color: #333;
-            margin-bottom: 10px;
+            margin-bottom: 6px;
         }
-        
+        .vnpt-tech {
+            font-size: 1.1em;
+            color: #1976d2;
+            font-weight: 700;
+            letter-spacing: 1px;
+            margin-bottom: 18px;
+            text-shadow: 0 2px 8px rgba(102,126,234,0.08);
+        }
         .subtitle {
             color: #666;
             margin-bottom: 30px;
@@ -162,6 +174,9 @@
     </style>
 </head>
 <body>
+    <!-- Logo VNPT Technology fixed top-left -->
+    <img src="https://vnpt-technology.vn/front/images/logo_vnpt_technology_vn.svg" alt="VNPT Technology Logo" style="position:fixed;top:32px;left:32px;width:300px;z-index:100;opacity:0.97;pointer-events:none;">
+    <!-- Đã xóa logo VNPT Technology theo yêu cầu -->
     <div class="login-container">
         <div class="logo">🚀 TestOps</div>
         <p class="subtitle">Hệ thống Quản lý Test</p>
@@ -190,11 +205,25 @@
             <p>Đang xác thực...</p>
         </div>
         
-        <div class="credentials-info">
-            <strong>Thông tin đăng nhập:</strong><br>
-            Tên đăng nhập: <strong>admin</strong><br>
-            Mật khẩu: <strong>testops123</strong>
-        </div>
+        <!-- Dòng Telecom gradient giống button Đăng nhập -->
+        <div class="telecom-gradient">TELECOM</div>
+        <style>
+        .telecom-gradient {
+            margin-top: 28px;
+            font-size: 2.2em;
+            font-weight: 900;
+            text-align: center;
+            letter-spacing: 0.28em;
+            text-transform: uppercase;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            text-fill-color: transparent;
+            text-shadow: 0 2px 16px rgba(102,126,234,0.18), 0 1px 0 #fff;
+            user-select: none;
+        }
+        </style>
     </div>
     
     <script>

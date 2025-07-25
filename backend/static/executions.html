@@ -1323,16 +1323,10 @@
                     const response = await fetch(`${EXECUTIONS_API}/${id}`, {
                         method: 'DELETE'
                     });
-                    
                     if (response.ok) {
                         const result = await response.json();
-                        
-                        // Xóa task khỏi danh sách executions
                         executions = executions.filter(exe => exe.id !== id);
-                        
-                        // Render lại danh sách
                         if (currentProjectId) {
-                            // Nếu đang xem dự án cụ thể
                             const currentProject = projects.find(p => p.id == currentProjectId);
                             renderExecutions({
                                 project: {
@@ -1343,13 +1337,20 @@
                                 count: executions.filter(exe => exe.project_id == currentProjectId).length
                             });
                         } else {
-                            // Nếu đang xem tất cả executions
                             renderAllExecutions({
                                 executions: executions,
                                 count: executions.length
                             });
                         }
-                        
+                        // Gửi sự kiện cập nhật report qua BroadcastChannel
+                        if (window.BroadcastChannel) {
+                            const bc = new BroadcastChannel('testops_reports_update');
+                            bc.postMessage({ type: 'refresh-history-reports' });
+                            bc.close();
+                        } else {
+                            // fallback: set localStorage event
+                            localStorage.setItem('testops_reports_update', Date.now().toString());
+                        }
                         alert(`✅ ${result.message}`);
                     } else {
                         const errorText = await response.text();

@@ -2,7 +2,7 @@ import os
 import requests
 import xml.etree.ElementTree as ET
 from fastapi import APIRouter, HTTPException
-from database import get_db, Cicd, Project
+from database import get_db, Cicd, Project, Report
 from fastapi import Depends
 from sqlalchemy.orm import Session
 from sqlalchemy import func, text
@@ -233,12 +233,18 @@ def delete_cicd(cicd_id: int, db: Session = Depends(get_db)):
                     "job_name": cicd_task.jenkins_job
                 }
         
+        # Xóa tất cả reports có task_id trùng với task_id của task CI/CD này
+        cicd_task_id = f"CICD-{cicd_id:03d}"
+        reports_deleted = db.query(Report).filter(Report.task_id == cicd_task_id).delete()
+        
         # Xóa task khỏi database
         db.delete(cicd_task)
         db.commit()
         
         # Tạo response message
         message = f"Đã xóa thành công task CI/CD '{task_info['cicd_name']}' (ID: {task_info['cicd_id']})"
+        if reports_deleted > 0:
+            message += f"\n\nĐã xóa {reports_deleted} report(s) liên quan"
         if jenkins_result:
             message += f"\n\nJenkins: {jenkins_result['message']}"
         
@@ -679,7 +685,7 @@ def add_github_webhook_public(repo_url: str, job_name: str):
         }
         
         # GitHub token
-        github_token = "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"
+        github_token = "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"
         
         # Gọi GitHub API để tạo webhook với token
         github_api_url = f"https://api.github.com/repos/{repo_path}/hooks"

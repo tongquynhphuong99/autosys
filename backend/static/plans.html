@@ -1220,7 +1220,16 @@
                         } else {
                             renderAllPlans({ plans: plans, count: plans.length });
                         }
-                        alert(`✅ ${result.message}`);
+                        // Gửi sự kiện cập nhật report qua BroadcastChannel
+                        if (window.BroadcastChannel) {
+                            const bc = new BroadcastChannel('testops_reports_update');
+                            bc.postMessage({ type: 'refresh-history-reports' });
+                            bc.close();
+                        } else {
+                            // fallback: set localStorage event
+                            localStorage.setItem('testops_reports_update', Date.now().toString());
+                        }
+                        alert(`✅ ${result.message}\nĐã xóa ${result.reports_deleted || 0} report liên quan.`);
                     } else {
                         const errorText = await response.text();
                         alert(`❌ Lỗi: ${errorText}`);

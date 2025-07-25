@@ -52,7 +52,7 @@ services:
       - JENKINS_URL=http://jenkins:8080
       - JENKINS_USER=admin
       - JENKINS_TOKEN=admin
-      - NGROK_URL=https://e6c975c74743.ngrok-free.app
+      - NGROK_URL=https://291aefae24c2.ngrok-free.app
 
     depends_on:
       postgres:
@@ -71,3 +71,4 @@ services:
 
 volumes:
   postgres_data: 
+  

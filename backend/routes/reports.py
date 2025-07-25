@@ -1589,6 +1589,61 @@ def reset_all_reports():
         print(f"[DEBUG] Error resetting all reports: {e}")
         raise HTTPException(status_code=500, detail=f"Internal server error: {e}")
 
+@router.delete("/cleanup-orphaned-reports")
+def cleanup_orphaned_reports():
+    """Xóa tất cả reports của task CI/CD đã bị xóa khỏi database"""
+    try:
+        from database import SessionLocal
+        db = SessionLocal()
+        try:
+            from database import Report, Cicd
+            
+            # Lấy tất cả task_id từ reports có task_type = 'cicd'
+            cicd_reports = db.query(Report.task_id).filter(Report.task_type == 'cicd').distinct().all()
+            
+            orphaned_reports = []
+            total_deleted = 0
+            
+            for (task_id,) in cicd_reports:
+                # Kiểm tra xem task CI/CD có còn tồn tại không
+                if task_id.startswith('CICD-'):
+                    try:
+                        # Extract ID từ CICD-001 format
+                        cicd_id = int(task_id.split('-')[1])
+                        cicd_task = db.query(Cicd).filter(Cicd.id == cicd_id).first()
+                        
+                        if not cicd_task:
+                            # Task CI/CD đã bị xóa, xóa tất cả reports của task này
+                            deleted_count = db.query(Report).filter(Report.task_id == task_id).delete()
+                            orphaned_reports.append({
+                                "task_id": task_id,
+                                "deleted_count": deleted_count
+                            })
+                            total_deleted += deleted_count
+                    except (ValueError, IndexError):
+                        # Format không đúng, xóa reports này
+                        deleted_count = db.query(Report).filter(Report.task_id == task_id).delete()
+                        orphaned_reports.append({
+                            "task_id": task_id,
+                            "deleted_count": deleted_count,
+                            "reason": "Invalid format"
+                        })
+                        total_deleted += deleted_count
+            
+            db.commit()
+            
+            return {
+                "message": f"Đã xóa {total_deleted} reports của task CI/CD đã bị xóa",
+                "total_deleted": total_deleted,
+                "orphaned_reports": orphaned_reports
+            }
+            
+        finally:
+            db.close()
+    except Exception as e:
+        print(f"[DEBUG] Error cleaning up orphaned reports: {e}")
+        raise HTTPException(status_code=500, detail=f"Internal server error: {e}")
+
 @router.get("/history-reports")
 def get_history_reports(
     project_id: Optional[int] = None,

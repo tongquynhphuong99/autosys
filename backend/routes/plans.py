@@ -229,14 +229,16 @@ def update_plan(plan_id: int, plan_data: dict, db: Session = Depends(get_db)):
 
 @router.delete("/{plan_id}")
 def delete_plan(plan_id: int, db: Session = Depends(get_db)):
-    """Delete a plan - chỉ xóa cron schedule, không xóa plan khỏi database"""
+    """Delete a plan và xóa luôn các report liên quan"""
     try:
+        from database import Report
         plan = db.query(Plan).filter(Plan.id == plan_id).first()
         if not plan:
             raise HTTPException(status_code=404, detail="Plan not found")
-        
         plan_name = plan.plan_name
         jenkins_job = plan.jenkins_job
+        # Xóa các report liên quan
+        reports_deleted = db.query(Report).filter(Report.task_id == plan.plan_id).delete()
         
         # Nếu plan có Jenkins job, xóa cron schedule
         if jenkins_job:
@@ -302,7 +304,8 @@ def delete_plan(plan_id: int, db: Session = Depends(get_db)):
                                 "plan_name": plan_name,
                                 "jenkins_job": jenkins_job,
                                 "action": "plan_deleted",
-                                "cron_removed": True
+                                "cron_removed": True,
+                                "reports_deleted": reports_deleted
                             }
                         else:
                             print(f"[DEBUG] Failed to remove cron schedule from Jenkins job: {jenkins_job} - HTTP {update_response.status_code}")
@@ -317,7 +320,8 @@ def delete_plan(plan_id: int, db: Session = Depends(get_db)):
                                 "jenkins_job": jenkins_job,
                                 "action": "plan_deleted_with_cron_error",
                                 "cron_removed": False,
-                                "error": f"HTTP {update_response.status_code}: {update_response.text}"
+                                "error": f"HTTP {update_response.status_code}: {update_response.text}",
+                                "reports_deleted": reports_deleted
                             }
                     else:
                         print(f"[DEBUG] Failed to get config from Jenkins job: {jenkins_job} - HTTP {config_response.status_code}")
@@ -332,7 +336,8 @@ def delete_plan(plan_id: int, db: Session = Depends(get_db)):
                             "jenkins_job": jenkins_job,
                             "action": "plan_deleted_with_config_error",
                             "cron_removed": False,
-                            "error": f"HTTP {config_response.status_code}: {config_response.text}"
+                            "error": f"HTTP {config_response.status_code}: {config_response.text}",
+                            "reports_deleted": reports_deleted
                         }
                 else:
                     print(f"[DEBUG] Jenkins job not found: {jenkins_job}")
@@ -347,7 +352,8 @@ def delete_plan(plan_id: int, db: Session = Depends(get_db)):
                         "jenkins_job": jenkins_job,
                         "action": "plan_deleted_job_not_found",
                         "cron_removed": False,
-                        "error": "Job không tồn tại trong Jenkins"
+                        "error": "Job không tồn tại trong Jenkins",
+                        "reports_deleted": reports_deleted
                     }
                     
             except requests.exceptions.RequestException as e:
@@ -363,7 +369,8 @@ def delete_plan(plan_id: int, db: Session = Depends(get_db)):
                     "jenkins_job": jenkins_job,
                     "action": "plan_deleted_connection_error",
                     "cron_removed": False,
-                    "error": f"Connection error: {str(e)}"
+                    "error": f"Connection error: {str(e)}",
+                    "reports_deleted": reports_deleted
                 }
             except Exception as e:
                 print(f"[DEBUG] Error removing cron schedule from Jenkins job {jenkins_job}: {e}")
@@ -378,7 +385,8 @@ def delete_plan(plan_id: int, db: Session = Depends(get_db)):
                     "jenkins_job": jenkins_job,
                     "action": "plan_deleted_with_error",
                     "cron_removed": False,
-                    "error": f"Error: {str(e)}"
+                    "error": f"Error: {str(e)}",
+                    "reports_deleted": reports_deleted
                 }
         else:
             # Plan không có Jenkins job, xóa khỏi database
@@ -391,7 +399,8 @@ def delete_plan(plan_id: int, db: Session = Depends(get_db)):
                 "plan_name": plan_name,
                 "jenkins_job": None,
                 "action": "plan_deleted_no_jenkins_job",
-                "cron_removed": False
+                "cron_removed": False,
+                "reports_deleted": reports_deleted
             }
             
     except HTTPException:

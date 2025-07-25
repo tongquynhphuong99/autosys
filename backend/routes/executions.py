@@ -219,20 +219,22 @@ def create_execution(execution: ExecutionCreate, db: SessionLocal = Depends(get_
 
 @router.delete("/{execution_id}")
 def delete_execution(execution_id: int, db: SessionLocal = Depends(get_db)):
-    """Xóa execution task theo ID"""
+    """Xóa execution task theo ID và xóa luôn các report liên quan"""
     try:
+        from database import Report
         # Tìm execution cần xóa
         execution = db.query(Execution).filter(Execution.id == execution_id).first()
         if not execution:
             raise HTTPException(status_code=404, detail="Execution not found")
-        
         task_name = execution.task_name
+        # Xóa các report liên quan
+        reports_deleted = db.query(Report).filter(Report.task_id == execution.task_id).delete()
         db.delete(execution)
         db.commit()
-        
         return {
-            "message": f"Đã xóa task '{task_name}' thành công",
-            "execution_id": execution_id
+            "message": f"Đã xóa task '{task_name}' thành công và {reports_deleted} report liên quan",
+            "execution_id": execution_id,
+            "reports_deleted": reports_deleted
         }
     except HTTPException:
         raise

@@ -1839,6 +1839,22 @@
             const remainingSeconds = seconds % 60;
             return `${minutes}m ${remainingSeconds}s`;
         }
+
+        // Lắng nghe sự kiện cập nhật report từ các tab khác
+        if (window.BroadcastChannel) {
+            const bc = new BroadcastChannel('testops_reports_update');
+            bc.onmessage = (event) => {
+                if (event.data && event.data.type === 'refresh-history-reports') {
+                    loadHistoryReports();
+                }
+            };
+        } else {
+            window.addEventListener('storage', function(e) {
+                if (e.key === 'testops_reports_update') {
+                    loadHistoryReports();
+                }
+            });
+        }
     </script>
 </body>
 </html>
