@@ -5,7 +5,7 @@ import os
 import xml.etree.ElementTree as ET
 from typing import Dict, List, Optional
 from datetime import datetime, timedelta
-from sqlalchemy import func, and_, Integer
+from sqlalchemy import func, and_, Integer, text
 from sqlalchemy.orm import Session
 from database import get_db, Project, Execution, TestCase, Report
 from routes.log import log_backend_event
@@ -1553,4 +1553,174 @@ def cleanup_task_reports(task_id: str):
             db.close()
     except Exception as e:
         print(f"[DEBUG] Error cleaning up task reports: {e}")
+        raise HTTPException(status_code=500, detail=f"Internal server error: {e}")
+
+@router.delete("/reset-all-reports")
+def reset_all_reports():
+    """Xóa tất cả reports khỏi database"""
+    try:
+        from database import SessionLocal
+        db = SessionLocal()
+        try:
+            from database import Report
+            
+            # Đếm số reports trước khi xóa
+            total_reports = db.query(Report).count()
+            
+            if total_reports == 0:
+                return {"message": "Không có reports nào để xóa"}
+            
+            # Xóa tất cả reports
+            db.query(Report).delete()
+            db.commit()
+            
+            # Reset sequence về 1
+            db.execute(text("ALTER SEQUENCE reports_id_seq RESTART WITH 1"))
+            db.commit()
+            
+            return {
+                "message": f"Đã xóa thành công {total_reports} reports khỏi database và reset ID sequence",
+                "deleted_count": total_reports
+            }
+            
+        finally:
+            db.close()
+    except Exception as e:
+        print(f"[DEBUG] Error resetting all reports: {e}")
+        raise HTTPException(status_code=500, detail=f"Internal server error: {e}")
+
+@router.get("/history-reports")
+def get_history_reports(
+    project_id: Optional[int] = None,
+    task_type: Optional[str] = None,
+    start_date: Optional[str] = None,
+    end_date: Optional[str] = None,
+    limit: int = 100
+):
+    """Lấy lịch sử reports với filter theo project, task type, và date range"""
+    try:
+        from database import SessionLocal
+        db = SessionLocal()
+        try:
+            from database import Report, Project, Execution, Plan, Cicd
+            
+            # Base query
+            query = db.query(Report)
+            
+            # Filter theo project
+            if project_id:
+                query = query.filter(Report.project_id == project_id)
+            
+            # Filter theo task type
+            if task_type:
+                if task_type == "executions":
+                    query = query.filter(Report.task_id.like("EXEC-%"))
+                elif task_type == "plans":
+                    query = query.filter(Report.task_id.like("PLAN-%"))
+                elif task_type == "cicd":
+                    query = query.filter(Report.task_id.like("CICD-%"))
+            
+            # Filter theo date range
+            if start_date:
+                try:
+                    start_datetime = datetime.strptime(start_date, "%Y-%m-%d")
+                    query = query.filter(Report.created_at >= start_datetime)
+                except ValueError:
+                    pass
+            
+            if end_date:
+                try:
+                    end_datetime = datetime.strptime(end_date, "%Y-%m-%d") + timedelta(days=1)
+                    query = query.filter(Report.created_at < end_datetime)
+                except ValueError:
+                    pass
+            
+            # Sắp xếp theo thời gian mới nhất
+            query = query.order_by(Report.created_at.desc())
+            
+            # Giới hạn số lượng
+            query = query.limit(limit)
+            
+            reports = query.all()
+            
+            # Format kết quả
+            history_data = []
+            for report in reports:
+                # Lấy thông tin project
+                project = db.query(Project).filter(Project.id == report.project_id).first()
+                
+                # Xác định loại task và lấy thông tin task
+                task_info = None
+                task_name = "Unknown Task"
+                
+                if report.task_id.startswith("EXEC-"):
+                    task_info = db.query(Execution).filter(Execution.task_id == report.task_id).first()
+                    if task_info:
+                        task_name = task_info.task_name
+                elif report.task_id.startswith("PLAN-"):
+                    task_info = db.query(Plan).filter(Plan.plan_id == report.task_id).first()
+                    if task_info:
+                        task_name = task_info.plan_name
+                elif report.task_id.startswith("CICD-"):
+                    task_info = db.query(Cicd).filter(Cicd.cicd_id == report.task_id).first()
+                    if task_info:
+                        task_name = task_info.cicd_name
+                elif report.task_id.startswith("TASK-"):
+                    # TASK-001 là execution task
+                    task_info = db.query(Execution).filter(Execution.task_id == report.task_id).first()
+                    if task_info:
+                        task_name = task_info.task_name
+                
+                # Tính success rate
+                success_rate = (report.passed_tests / report.total_tests * 100) if report.total_tests > 0 else 0
+                
+                # Lấy Jenkins job name từ task info
+                jenkins_job = "Unknown"
+                if task_info:
+                    if report.task_id.startswith("EXEC-") or report.task_id.startswith("TASK-"):
+                        jenkins_job = task_info.jenkins_job or "Unknown"
+                    elif report.task_id.startswith("PLAN-"):
+                        jenkins_job = task_info.jenkins_job or "Unknown"
+                    elif report.task_id.startswith("CICD-"):
+                        jenkins_job = task_info.jenkins_job or "Unknown"
+                
+                history_data.append({
+                    "report_id": report.id,
+                    "task_id": report.task_id,
+                    "task_name": task_name,
+                    "project_name": project.name if project else "Unknown Project",
+                    "project_id": report.project_id,
+                    "jenkins_job": jenkins_job,
+                    "build_number": report.build_number,
+                    "created_at": report.created_at.isoformat() if report.created_at else None,
+                    "start_time": report.start_time.isoformat() if report.start_time else None,
+                    "end_time": report.end_time.isoformat() if report.end_time else None,
+                    "duration_seconds": report.duration_seconds,
+                    "total_tests": report.total_tests,
+                    "passed_tests": report.passed_tests,
+                    "failed_tests": report.failed_tests,
+                    "skipped_tests": report.skipped_tests,
+                    "success_rate": round(success_rate, 2),
+                    "status": report.status,
+                    "task_type": "executions" if report.task_id.startswith("EXEC-") or report.task_id.startswith("TASK-") else 
+                                "plans" if report.task_id.startswith("PLAN-") else 
+                                "cicd" if report.task_id.startswith("CICD-") else "unknown"
+                })
+            
+            return {
+                "history_reports": history_data,
+                "total_count": len(history_data),
+                "filters": {
+                    "project_id": project_id,
+                    "task_type": task_type,
+                    "start_date": start_date,
+                    "end_date": end_date,
+                    "limit": limit
+                }
+            }
+            
+        finally:
+            db.close()
+    except Exception as e:
+        print(f"[DEBUG] Error getting history reports: {e}")
         raise HTTPException(status_code=500, detail=f"Internal server error: {e}") 

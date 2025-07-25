@@ -659,7 +659,7 @@ def add_github_webhook_public(repo_url: str, job_name: str):
         }
         
         # GitHub token
-        github_token = "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"
+        github_token = "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"
         
         # Gọi GitHub API để tạo webhook với token
         github_api_url = f"https://api.github.com/repos/{repo_path}/hooks"

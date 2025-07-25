@@ -876,7 +876,15 @@
         
         function formatDateTime(dateTime) {
             if (!dateTime) return '-';
-            return new Date(dateTime).toLocaleString('vi-VN');
+            
+            // Tạo Date object từ UTC string
+            const utcDate = new Date(dateTime);
+            
+            // Thêm 7 giờ để chuyển từ UTC sang UTC+7
+            const vietnamTime = new Date(utcDate.getTime() + (7 * 60 * 60 * 1000));
+            
+            // Format theo định dạng Việt Nam
+            return vietnamTime.toLocaleString('vi-VN');
         }
         
 

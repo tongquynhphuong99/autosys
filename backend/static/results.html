@@ -382,7 +382,11 @@
             }
             
             const duration = buildInfo.duration ? Math.round(buildInfo.duration / 1000) : 0;
-            const timestamp = buildInfo.timestamp ? new Date(buildInfo.timestamp).toLocaleString('vi-VN') : 'N/A';
+            const timestamp = buildInfo.timestamp ? (() => {
+                const utcDate = new Date(buildInfo.timestamp);
+                const vietnamTime = new Date(utcDate.getTime() + (7 * 60 * 60 * 1000));
+                return vietnamTime.toLocaleString('vi-VN');
+            })() : 'N/A';
             
             buildInfoDiv.innerHTML = `
                 <div class="build-stat">

@@ -263,6 +263,8 @@
             border-radius: 8px;
             font-size: 14px;
             min-width: 150px;
+            height: 38px;
+            box-sizing: border-box;
         }
         
         .filter-group select:focus {
@@ -270,14 +272,35 @@
             border-color: #667eea;
         }
         
+        .filter-group input[type="date"] {
+            padding: 8px 12px;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 14px;
+            min-width: 150px;
+            height: 38px;
+            box-sizing: border-box;
+        }
+        
+        .filter-group input[type="date"]:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
         .btn {
-            padding: 8px 16px;
+            padding: 8px 12px;
             border: none;
             border-radius: 8px;
             cursor: pointer;
             font-weight: 600;
             transition: all 0.3s ease;
             font-size: 14px;
+            height: 38px;
+            min-width: 100px;
+            box-sizing: border-box;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
         }
         
         .btn-primary {
@@ -287,6 +310,24 @@
         
         .btn-primary:hover {
             background: #5a6fd8;
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+        
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background: #c82333;
         }
         
         .table-container {
@@ -299,34 +340,146 @@
             font-size: 14px;
         }
         
-        .data-table th,
-        .data-table td {
-            padding: 12px;
-            text-align: left;
-            border-bottom: 1px solid #e1e5e9;
-        }
-        
-        .data-table th {
-            background: #f8f9fa;
+        /* History Reports Styles */
+        .task-id {
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            padding: 2px 6px;
+            border-radius: 4px;
             font-weight: 600;
-            color: #333;
         }
         
-        .data-table tr:hover {
-            background: #f8f9fa;
+        .task-id.executions {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+        
+        .task-id.plans {
+            background: #f3e5f5;
+            color: #7b1fa2;
+        }
+        
+        .task-id.cicd {
+            background: #e8f5e8;
+            color: #388e3c;
+        }
+        
+        .jenkins-job {
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            background: #f5f5f5;
+            color: #333;
+            font-weight: 500;
+        }
+        
+        .report-id {
+            font-family: 'Courier New', monospace;
+            font-size: 11px;
+            padding: 2px 6px;
+            border-radius: 4px;
+            background: #e3f2fd;
+            color: #1976d2;
+            font-weight: 600;
+        }
+        
+        .success-rate {
+            font-weight: 600;
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+        
+        .success-rate.excellent {
+            background: #e8f5e8;
+            color: #2e7d32;
+        }
+        
+        .success-rate.good {
+            background: #fff3e0;
+            color: #f57c00;
+        }
+        
+        .success-rate.warning {
+            background: #fff8e1;
+            color: #fbc02d;
+        }
+        
+        .success-rate.poor {
+            background: #ffebee;
+            color: #d32f2f;
+        }
+        
+        .test-counts {
+            display: flex;
+            gap: 8px;
+            font-size: 12px;
+        }
+        
+        .test-counts .passed {
+            color: #2e7d32;
+            font-weight: 600;
+        }
+        
+        .test-counts .failed {
+            color: #d32f2f;
+            font-weight: 600;
+        }
+        
+        .test-counts .skipped {
+            color: #757575;
+            font-weight: 600;
         }
         
         .status-badge {
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 12px;
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 11px;
             font-weight: 600;
+            text-transform: uppercase;
         }
         
-        .status-initialized { background: #fff3cd; color: #856404; }
-        .status-running { background: #d1ecf1; color: #0c5460; }
-        .status-completed { background: #d4edda; color: #155724; }
-        .status-failed { background: #f8d7da; color: #721c24; }
+        .status-badge.success {
+            background: #e8f5e8;
+            color: #2e7d32;
+        }
+        
+        .status-badge.failed {
+            background: #ffebee;
+            color: #d32f2f;
+        }
+        
+        .status-badge.aborted {
+            background: #f3e5f5;
+            color: #7b1fa2;
+        }
+        
+        .status-badge.completed {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+        
+        .btn-sm {
+            padding: 4px 8px;
+            font-size: 11px;
+            margin: 0 2px;
+        }
+        
+        .no-data {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+            font-size: 16px;
+        }
+        
+        .error {
+            text-align: center;
+            padding: 20px;
+            color: #d32f2f;
+            background: #ffebee;
+            border-radius: 8px;
+            margin: 20px 0;
+        }
         
         .progress-bar {
             width: 100%;
@@ -354,6 +507,24 @@
             padding: 15px;
             border-radius: 8px;
             margin: 20px 0;
+        }
+        
+        /* Basic Table Styles */
+        .data-table th,
+        .data-table td {
+            padding: 12px;
+            text-align: left;
+            border-bottom: 1px solid #e1e5e9;
+        }
+        
+        .data-table th {
+            background: #f8f9fa;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .data-table tr:hover {
+            background: #f8f9fa;
         }
         
         @media (max-width: 768px) {
@@ -465,6 +636,46 @@
             </div>
         </div>
         
+        <!-- History Report Task -->
+        <div class="details-section">
+            <div class="section-title">📚 Lịch sử Report</div>
+            
+            <div class="filters">
+                <div class="filter-group">
+                    <label>Dự án:</label>
+                    <select id="historyProjectFilter">
+                        <option value="">Tất cả dự án</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>Loại Task:</label>
+                    <select id="historyTaskTypeFilter">
+                        <option value="">Tất cả loại</option>
+                        <option value="executions">Executions</option>
+                        <option value="plans">Plans</option>
+                        <option value="cicd">CI/CD</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label>Từ ngày:</label>
+                    <input type="date" id="historyStartDate" />
+                </div>
+                <div class="filter-group">
+                    <label>Đến ngày:</label>
+                    <input type="date" id="historyEndDate" />
+                </div>
+                <div class="filter-group buttons">
+                    <label>&nbsp;</label>
+                    <button class="btn btn-primary" onclick="loadHistoryReports()">🔍 Lọc</button>
+                    <button class="btn btn-secondary" onclick="clearHistoryFilter()">🗑️ Xóa filter</button>
+                    <button class="btn btn-danger" onclick="resetAllReports()">⚠️ Reset</button>
+                </div>
+            </div>
+            
+            <div id="historyReportsTable">
+                <div class="loading">Đang tải lịch sử...</div>
+            </div>
+        </div>
 
     </div>
     
@@ -476,7 +687,7 @@
         let performanceChart = null;
         let projects = [];
         
-        // Load projects for filter dropdown
+        // Load projects for filter
         async function loadProjectsForFilter() {
             try {
                 const response = await fetch(`${API_BASE}/projects`);
@@ -495,8 +706,13 @@
         // Render project options in filter dropdown
         function renderProjectFilterOptions() {
             const select = document.getElementById('projectFilter');
-            select.innerHTML = '<option value="">Tất cả dự án</option>' +
+            const historySelect = document.getElementById('historyProjectFilter');
+            
+            const options = '<option value="">Tất cả dự án</option>' +
                 projects.map(p => `<option value="${p.id}">${p.name}</option>`).join('');
+            
+            select.innerHTML = options;
+            historySelect.innerHTML = options;
         }
         
 
@@ -1404,6 +1620,7 @@
             loadProjectsForFilter(); // Load projects cho filter dropdown
             loadTaskReports();
             loadTestResultsCharts(); // Load biểu đồ tổng quan
+            loadHistoryReports(); // Thêm dòng này
         });
 
         const REPORTS_API_EXECUTIONS = '/api/executions';
@@ -1431,6 +1648,190 @@
         function clearSelectedTask() {
             localStorage.removeItem('selected_report_task_id');
             window.location.reload();
+        }
+        
+        // History Reports Functions
+        async function loadHistoryReports() {
+            const projectId = document.getElementById('historyProjectFilter').value;
+            const taskType = document.getElementById('historyTaskTypeFilter').value;
+            const startDate = document.getElementById('historyStartDate').value;
+            const endDate = document.getElementById('historyEndDate').value;
+            
+            const tableContainer = document.getElementById('historyReportsTable');
+            tableContainer.innerHTML = '<div class="loading">Đang tải lịch sử...</div>';
+            
+            try {
+                const params = new URLSearchParams();
+                if (projectId) params.append('project_id', projectId);
+                if (taskType) params.append('task_type', taskType);
+                if (startDate) params.append('start_date', startDate);
+                if (endDate) params.append('end_date', endDate);
+                params.append('limit', '200'); // Lấy nhiều hơn để có đủ dữ liệu
+                
+                const response = await fetch(`${REPORTS_API}/history-reports?${params}`);
+                if (response.ok) {
+                    const data = await response.json();
+                    renderHistoryReportsTable(data.history_reports);
+                } else {
+                    throw new Error('Failed to load history reports');
+                }
+            } catch (error) {
+                console.error('Error loading history reports:', error);
+                tableContainer.innerHTML = '<div class="error">❌ Lỗi tải dữ liệu lịch sử</div>';
+            }
+        }
+        
+        function renderHistoryReportsTable(reports) {
+            const tableContainer = document.getElementById('historyReportsTable');
+            
+            if (!reports || reports.length === 0) {
+                tableContainer.innerHTML = '<div class="no-data">📭 Không có dữ liệu lịch sử</div>';
+                return;
+            }
+            
+            const table = `
+                <div class="table-container">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Task ID</th>
+                                <th>Tên Task</th>
+                                <th>Dự án</th>
+                                <th>Jenkins Job</th>
+                                <th>Build #</th>
+                                <th>Thời gian</th>
+                                <th>Tests</th>
+                                <th>Thời gian chạy</th>
+                                <th>Trạng thái</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${reports.map(report => `
+                                <tr>
+                                    <td>
+                                        <span class="report-id">#${report.report_id}</span>
+                                    </td>
+                                    <td>
+                                        <span class="task-id ${report.task_type}">${report.task_id}</span>
+                                    </td>
+                                    <td>${report.task_name}</td>
+                                    <td>${report.project_name}</td>
+                                    <td>
+                                        <span class="jenkins-job">${report.jenkins_job}</span>
+                                    </td>
+                                    <td>#${report.build_number}</td>
+                                    <td>${formatDateTime(report.created_at)}</td>
+                                    <td>
+                                        <span class="test-counts">
+                                            <span class="passed">✓${report.passed_tests}</span>
+                                            <span class="failed">✗${report.failed_tests}</span>
+                                            <span class="skipped">-${report.skipped_tests}</span>
+                                        </span>
+                                    </td>
+                                    <td>${formatDuration(report.duration_seconds)}</td>
+                                    <td>
+                                        <span class="status-badge ${report.status}">
+                                            ${getStatusText(report.status)}
+                                        </span>
+                                    </td>
+                                    <td>
+                                        <button onclick="viewFile('${report.jenkins_job}', '${report.build_number}', 'report.html')" 
+                                                class="btn btn-sm btn-primary">👁️ Xem</button>
+                                        <button onclick="downloadFile('${report.jenkins_job}', 'report.html')" 
+                                                class="btn btn-sm btn-secondary">📥 Tải</button>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+            
+            tableContainer.innerHTML = table;
+        }
+        
+        function clearHistoryFilter() {
+            document.getElementById('historyProjectFilter').value = '';
+            document.getElementById('historyTaskTypeFilter').value = '';
+            document.getElementById('historyStartDate').value = '';
+            document.getElementById('historyEndDate').value = '';
+            loadHistoryReports();
+        }
+        
+        async function resetAllReports() {
+            // Hiển thị confirmation dialog
+            const confirmed = confirm('⚠️ CẢNH BÁO: Bạn có chắc chắn muốn xóa TOÀN BỘ reports khỏi database?\n\nHành động này KHÔNG THỂ HOÀN TÁC!\n\nNhấn OK để tiếp tục hoặc Cancel để hủy.');
+            
+            if (!confirmed) {
+                return;
+            }
+            
+            // Hiển thị loading state
+            const resetBtn = document.querySelector('.btn-danger');
+            const originalText = resetBtn.innerHTML;
+            resetBtn.innerHTML = '⏳ Đang xóa...';
+            resetBtn.disabled = true;
+            
+            try {
+                // Gọi API để xóa tất cả reports
+                const response = await fetch(`${REPORTS_API}/reset-all-reports`, {
+                    method: 'DELETE'
+                });
+                
+                if (response.ok) {
+                    const result = await response.json();
+                    alert(`✅ ${result.message}`);
+                    
+                    // Reload lại bảng reports
+                    loadHistoryReports();
+                } else {
+                    throw new Error('Failed to reset reports');
+                }
+            } catch (error) {
+                console.error('Error resetting reports:', error);
+                alert('❌ Lỗi khi xóa reports: ' + error.message);
+            } finally {
+                // Khôi phục button state
+                resetBtn.innerHTML = originalText;
+                resetBtn.disabled = false;
+            }
+        }
+        
+
+        
+        function getSuccessRateClass(rate) {
+            if (rate >= 90) return 'excellent';
+            if (rate >= 80) return 'good';
+            if (rate >= 60) return 'warning';
+            return 'poor';
+        }
+        
+        function formatDateTime(dateString) {
+            if (!dateString) return 'N/A';
+            
+            // Tạo Date object từ UTC string
+            const utcDate = new Date(dateString);
+            
+            // Thêm 7 giờ để chuyển từ UTC sang UTC+7
+            const vietnamTime = new Date(utcDate.getTime() + (7 * 60 * 60 * 1000));
+            
+            // Format theo định dạng Việt Nam
+            return vietnamTime.toLocaleString('vi-VN', {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+        
+        function formatDuration(seconds) {
+            if (!seconds || seconds === 0) return 'N/A';
+            const minutes = Math.floor(seconds / 60);
+            const remainingSeconds = seconds % 60;
+            return `${minutes}m ${remainingSeconds}s`;
         }
     </script>
 </body>
