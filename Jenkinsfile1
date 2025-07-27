@@ -6,6 +6,10 @@ pipeline {
         }
     }
     
+    parameters {
+        string(name: 'TASK_ID', defaultValue: '', description: 'Task ID from TestOps (e.g., TASK-001, PLAN-001, CICD-001)')
+    }
+    
     stages {
         stage('Run Robot Tests') {
             steps {
@@ -35,9 +39,12 @@ pipeline {
                     build: [
                         number: env.BUILD_NUMBER,
                         result: 'SUCCESS',
-                        status: 'FINISHED',
+                        status: 'SUCCESS',
                         timestamp: currentBuild.startTimeInMillis,
-                        duration: currentBuild.duration
+                        duration: currentBuild.duration,
+                        parameters: [
+                            TASK_ID: params.TASK_ID
+                        ]
                     ]
                 ]
                 
@@ -61,9 +68,12 @@ pipeline {
                     build: [
                         number: env.BUILD_NUMBER,
                         result: 'FAILURE',
-                        status: 'FINISHED',
+                        status: 'FAILURE',
                         timestamp: currentBuild.startTimeInMillis,
-                        duration: currentBuild.duration
+                        duration: currentBuild.duration,
+                        parameters: [
+                            TASK_ID: params.TASK_ID
+                        ]
                     ]
                 ]
                 
@@ -87,9 +97,12 @@ pipeline {
                     build: [
                         number: env.BUILD_NUMBER,
                         result: 'ABORTED',
-                        status: 'FINISHED',
+                        status: 'ABORTED',
                         timestamp: currentBuild.startTimeInMillis,
-                        duration: currentBuild.duration
+                        duration: currentBuild.duration,
+                        parameters: [
+                            TASK_ID: params.TASK_ID
+                        ]
                     ]
                 ]
                 
