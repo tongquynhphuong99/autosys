@@ -52,9 +52,13 @@ pipeline {
                         ]
                     ]
                     
-                    // Chỉ thêm TASK_ID vào parameters nếu có giá trị
+                    // Thêm TASK_ID vào parameters
                     if (taskId && taskId.trim()) {
                         startWebhookData.build.parameters = [TASK_ID: taskId]
+                    } else if (env.TASK_TYPE == 'cicd') {
+                        // Với CI/CD, luôn gửi TASK_ID từ defaultValue hoặc cố định
+                        def cicdTaskId = taskId ?: 'CICD-002' // Fallback cho CI/CD
+                        startWebhookData.build.parameters = [TASK_ID: cicdTaskId]
                     }
                     
                     try {
@@ -142,9 +146,13 @@ pipeline {
                     ]
                 ]
                 
-                // Chỉ thêm TASK_ID vào parameters nếu có giá trị
+                // Thêm TASK_ID vào parameters
                 if (taskId && taskId.trim()) {
                     webhookData.build.parameters = [TASK_ID: taskId]
+                } else if (env.TASK_TYPE == 'cicd') {
+                    // Với CI/CD, luôn gửi TASK_ID từ defaultValue hoặc cố định
+                    def cicdTaskId = taskId ?: 'CICD-002' // Fallback cho CI/CD
+                    webhookData.build.parameters = [TASK_ID: cicdTaskId]
                 }
                 
                 try {
