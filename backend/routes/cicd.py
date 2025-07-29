@@ -80,6 +80,7 @@ def create_cicd(data: dict, db: Session = Depends(get_db)):
         description=data.get("description", "").strip(),
         jenkins_job=data["jenkins_job"].strip(),
         project_id=data["project_id"],
+        email_recipients=data.get("email_recipients", "").strip() if data.get("email_recipients") else None,
         status="initialized"
     )
     db.add(new_cicd)
@@ -97,6 +98,7 @@ def create_cicd(data: dict, db: Session = Depends(get_db)):
             "jenkins_job": new_cicd.jenkins_job,
             "project_id": new_cicd.project_id,
             "status": new_cicd.status,
+            "email_recipients": new_cicd.email_recipients,
             "created_at": new_cicd.created_at.isoformat() if new_cicd.created_at else None
         }
     }
@@ -119,6 +121,7 @@ def list_cicd(project_id: int = None, db: Session = Depends(get_db)):
             "project_id": c.Cicd.project_id,
             "project_name": c.project_name,
             "status": c.Cicd.status,
+            "email_recipients": c.Cicd.email_recipients,
             "created_at": c.Cicd.created_at.isoformat() if c.Cicd.created_at else None
         } for c in results
     ]}
@@ -145,6 +148,7 @@ def get_cicd(cicd_id: int, db: Session = Depends(get_db)):
                 "project_id": cicd_task.project_id,
                 "project_name": project.name if project else None,
                 "status": cicd_task.status,
+                "email_recipients": cicd_task.email_recipients,
                 "created_at": cicd_task.created_at.isoformat() if cicd_task.created_at else None
             }
         }
@@ -176,6 +180,7 @@ def update_cicd(cicd_id: int, data: dict, db: Session = Depends(get_db)):
         cicd_task.cicd_type = data["cicd_type"].strip()
         cicd_task.description = data.get("description", "").strip()
         cicd_task.jenkins_job = data["jenkins_job"].strip()
+        cicd_task.email_recipients = data.get("email_recipients", "").strip() if data.get("email_recipients") else None
         
         # Nếu thay đổi Jenkins job, reset status về initialized
         if old_jenkins_job != cicd_task.jenkins_job:
@@ -194,7 +199,8 @@ def update_cicd(cicd_id: int, data: dict, db: Session = Depends(get_db)):
                 "description": cicd_task.description,
                 "jenkins_job": cicd_task.jenkins_job,
                 "project_id": cicd_task.project_id,
-                "status": cicd_task.status
+                "status": cicd_task.status,
+                "email_recipients": cicd_task.email_recipients
             }
         }
         
@@ -288,7 +294,9 @@ def run_cicd_task(cicd_id: int, db: Session = Depends(get_db)):
         
         # Bước 1: Cấu hình Jenkins job trigger
         try:
-            jenkins_result = configure_jenkins_webhook_trigger(cicd_task.jenkins_job)
+            # Tạo task_id cho CI/CD task
+            cicd_task_id = f"CICD-{cicd_id:03d}"
+            jenkins_result = configure_jenkins_webhook_trigger(cicd_task.jenkins_job, cicd_task_id)
             result["steps"].append({
                 "step": "Jenkins Configuration",
                 "status": "success",
@@ -347,7 +355,7 @@ def run_cicd_task(cicd_id: int, db: Session = Depends(get_db)):
 
 @router.post("/cicd/{cicd_id}/stop")
 def stop_cicd_task(cicd_id: int, db: Session = Depends(get_db)):
-    """Dừng CI/CD task - disable GitHub hook trigger"""
+    """Dừng CI/CD task - disable GitHub hook trigger và dừng job đang chạy"""
     try:
         # Tìm CI/CD task
         cicd_task = db.query(Cicd).filter(Cicd.id == cicd_id).first()
@@ -357,37 +365,96 @@ def stop_cicd_task(cicd_id: int, db: Session = Depends(get_db)):
         if not cicd_task.jenkins_job:
             raise HTTPException(status_code=400, detail="CI/CD task không có Jenkins job được cấu hình")
         
-        # Disable GitHub hook trigger
+        # Cấu hình Jenkins
+        JENKINS_URL = os.getenv("JENKINS_URL", "http://localhost:8080")
+        
         try:
-            result = disable_jenkins_webhook_trigger(cicd_task.jenkins_job)
+            session = requests.Session()
             
-            # Cập nhật status thành deactive
-            cicd_task.status = "deactive"
-            db.commit()
+            # Lấy CSRF crumb từ Jenkins
+            crumb_url = f"{JENKINS_URL}/crumbIssuer/api/json"
+            crumb_response = session.get(crumb_url, timeout=30)
             
+            headers = {}
+            if crumb_response.status_code == 200:
+                crumb_data = crumb_response.json()
+                headers[crumb_data['crumbRequestField']] = crumb_data['crumb']
+                print(f"Got crumb: {crumb_data['crumb']}")
+            
+            # Kiểm tra xem job có đang chạy không
+            last_build_url = f"{JENKINS_URL}/job/{cicd_task.jenkins_job}/lastBuild/api/json"
+            build_response = session.get(last_build_url, timeout=30)
+            job_was_running = False
+            build_number = None
+            
+            if build_response.status_code == 200:
+                build_info = build_response.json()
+                building = build_info.get('building', False)
+                build_number = build_info.get('number')
+                
+                if building:
+                    # Dừng job đang chạy
+                    print(f"[DEBUG] Job {cicd_task.jenkins_job} đang chạy (build #{build_number}), dừng job...")
+                    stop_url = f"{JENKINS_URL}/job/{cicd_task.jenkins_job}/{build_number}/stop"
+                    stop_response = session.post(stop_url, headers=headers, timeout=30)
+                    job_was_running = True
+                    print(f"[DEBUG] Job stop response: {stop_response.status_code}")
+            
+            # Disable GitHub hook trigger (giữ nguyên tính năng cũ)
+            try:
+                result = disable_jenkins_webhook_trigger(cicd_task.jenkins_job)
+                
+                # Cập nhật status thành deactive
+                cicd_task.status = "deactive"
+                db.commit()
+                
+                # Tạo message tùy theo hành động
+                if job_was_running:
+                    message = f"Đã dừng CI/CD task '{cicd_task.cicd_name}' và dừng job Jenkins đang chạy"
+                    action = "stopped_running_job_and_disabled_github_hook_trigger"
+                else:
+                    message = f"Đã dừng CI/CD task '{cicd_task.cicd_name}'"
+                    action = "disabled_github_hook_trigger"
+                
+                return {
+                    "message": message,
+                    "cicd_id": cicd_task.id,
+                    "cicd_name": cicd_task.cicd_name,
+                    "jenkins_job": cicd_task.jenkins_job,
+                    "action": action,
+                    "status": "deactive",
+                    "job_was_running": job_was_running,
+                    "build_number": build_number
+                }
+                
+            except Exception as jenkins_error:
+                return {
+                    "message": f"Lỗi khi dừng Jenkins job: {str(jenkins_error)}",
+                    "cicd_id": cicd_task.id,
+                    "cicd_name": cicd_task.cicd_name,
+                    "jenkins_job": cicd_task.jenkins_job,
+                    "action": "failed_to_disable_trigger",
+                    "status": cicd_task.status,
+                    "error": str(jenkins_error),
+                    "job_was_running": job_was_running,
+                    "build_number": build_number
+                }
+                
+        except requests.exceptions.RequestException as e:
             return {
-                "message": f"Đã dừng CI/CD task '{cicd_task.cicd_name}'",
+                "message": f"Không thể kết nối đến Jenkins server",
                 "cicd_id": cicd_task.id,
                 "cicd_name": cicd_task.cicd_name,
                 "jenkins_job": cicd_task.jenkins_job,
-                "action": "disabled_github_hook_trigger",
-                "status": "deactive"
-            }
-            
-        except Exception as jenkins_error:
-            return {
-                "message": f"Lỗi khi dừng Jenkins job: {str(jenkins_error)}",
-                "cicd_id": cicd_task.id,
-                "cicd_name": cicd_task.cicd_name,
-                "jenkins_job": cicd_task.jenkins_job,
-                "action": "failed_to_disable_trigger",
+                "action": "connection_error",
                 "status": cicd_task.status,
-                "error": str(jenkins_error)
+                "error": f"Connection error: {str(e)}"
             }
             
     except HTTPException:
         raise
     except Exception as e:
+        print(f"[DEBUG] Error stopping CI/CD task: {e}")
         raise HTTPException(status_code=500, detail=f"Lỗi dừng task CI/CD: {str(e)}")
 
 @router.get("/cicd/{cicd_id}/results")
@@ -564,8 +631,8 @@ def disable_jenkins_webhook_trigger(job_name: str):
     except Exception as e:
         raise Exception(f"Lỗi disable Jenkins trigger: {str(e)}")
 
-def configure_jenkins_webhook_trigger(job_name: str):
-    """Cấu hình Jenkins Pipeline job để bật GitHub hook trigger for GITScm polling"""
+def configure_jenkins_webhook_trigger(job_name: str, task_id: str = None):
+    """Cấu hình Jenkins Pipeline job để bật GitHub hook trigger for GITScm polling và cập nhật TASK_ID"""
     try:
         JENKINS_URL = os.getenv("JENKINS_URL", "http://localhost:8080")
         JENKINS_USER = os.getenv("JENKINS_USER", "admin")
@@ -595,8 +662,32 @@ def configure_jenkins_webhook_trigger(job_name: str):
         if response.status_code != 200:
             raise Exception(f"Không thể lấy cấu hình job: {response.status_code}")
         
+        current_config = response.text
+        
+        current_config = response.text
+        
+        # Cập nhật defaultValue cho TASK_ID parameter nếu có task_id
+        if task_id:
+            import re
+            # Pattern để tìm TASK_ID parameter definition
+            task_id_pattern = r'(<hudson\.model\.StringParameterDefinition>\s*<name>TASK_ID</name>.*?<trim>false</trim>)'
+            task_id_replacement = f'<hudson.model.StringParameterDefinition>\n          <name>TASK_ID</name>\n          <description>Task ID from TestOps (e.g., TASK-001, PLAN-001, CICD-001)</description>\n          <defaultValue>{task_id}</defaultValue>\n          <trim>false</trim>'
+            
+            # Thử cập nhật với pattern hiện tại
+            updated_config = re.sub(task_id_pattern, task_id_replacement, current_config, flags=re.DOTALL)
+            
+            # Kiểm tra xem có thay đổi không
+            if updated_config == current_config:
+                # Nếu không thay đổi, thử pattern khác (không có description)
+                task_id_pattern2 = r'(<hudson\.model\.StringParameterDefinition>\s*<name>TASK_ID</name>\s*<trim>false</trim>)'
+                task_id_replacement2 = f'<hudson.model.StringParameterDefinition>\n          <name>TASK_ID</name>\n          <description>Task ID from TestOps (e.g., TASK-001, PLAN-001, CICD-001)</description>\n          <defaultValue>{task_id}</defaultValue>\n          <trim>false</trim>'
+                updated_config = re.sub(task_id_pattern2, task_id_replacement2, current_config, flags=re.DOTALL)
+            
+            current_config = updated_config
+            print(f"[DEBUG] Updated TASK_ID defaultValue to: {task_id}")
+        
         # Parse XML và thêm GitHub hook trigger cho Pipeline job
-        root = ET.fromstring(response.text)
+        root = ET.fromstring(current_config)
         
         # Tìm PipelineTriggersJobProperty trong properties
         properties = root.find('.//properties')
@@ -620,9 +711,9 @@ def configure_jenkins_webhook_trigger(job_name: str):
         # Thêm GitHub hook trigger for GITScm polling
         # Đây chính là trigger đúng từ Jenkins UI
         github_trigger = ET.SubElement(triggers, 'com.cloudbees.jenkins.GitHubPushTrigger')
-        # Thêm plugin attribute và empty spec như Jenkins UI
+        # Thêm plugin attribute và empty spec cho GitHub hook trigger
         github_trigger.set('plugin', 'github@1.43.0')
-        ET.SubElement(github_trigger, 'spec').text = ''
+        ET.SubElement(github_trigger, 'spec')
         
         # Cập nhật config
         updated_config = ET.tostring(root, encoding='unicode')
@@ -685,7 +776,7 @@ def add_github_webhook_public(repo_url: str, job_name: str):
         }
         
         # GitHub token
-        github_token = "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"
+        github_token = "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"
         
         # Gọi GitHub API để tạo webhook với token
         github_api_url = f"https://api.github.com/repos/{repo_path}/hooks"
@@ -779,3 +870,5 @@ def add_github_webhook_public(repo_url: str, job_name: str):
     except Exception as e:
         logging.error(f"[Webhook] Lỗi thêm webhook GitHub: {str(e)}")
         raise Exception(f"Lỗi thêm webhook GitHub: {str(e)}")
+
+

@@ -18,12 +18,14 @@ class ExecutionCreate(BaseModel):
     jenkins_job: str
     project_id: int
     task_id: Optional[str] = None  # Cho phép chỉ định task_id
+    email_recipients: Optional[str] = None  # Comma-separated email addresses
 
 class ExecutionUpdate(BaseModel):
     task_name: str
     description: Optional[str] = None
     jenkins_job: str
     project_id: int
+    email_recipients: Optional[str] = None  # Comma-separated email addresses
 
 def get_next_available_execution_id(db):
     """Tìm ID nhỏ nhất có sẵn để tái sử dụng"""
@@ -96,6 +98,7 @@ def get_executions(db: SessionLocal = Depends(get_db)):
                 "project_name": project.name if project else "Unknown",
                 "jenkins_job": exe.jenkins_job,
                 "status": exe.status,
+                "email_recipients": exe.email_recipients,
                 "created_at": exe.created_at.isoformat() if exe.created_at else None
             })
         return {"executions": result, "count": len(result)}
@@ -148,7 +151,8 @@ def get_projects(db: SessionLocal = Depends(get_db)):
         for proj in projects:
             result.append({
                 "id": proj.id,
-                "name": proj.name
+                "name": proj.name,
+                "repo_link": proj.repo_link
             })
         return {"projects": result}
     except Exception as e:
@@ -188,6 +192,7 @@ def create_execution(execution: ExecutionCreate, db: SessionLocal = Depends(get_
             description=execution.description.strip() if execution.description else "",
             jenkins_job=execution.jenkins_job.strip(),
             project_id=execution.project_id,
+            email_recipients=execution.email_recipients.strip() if execution.email_recipients else None,
             status='initialized',
             created_at=datetime.utcnow()
         )
@@ -273,6 +278,7 @@ def update_execution(execution_id: int, execution: ExecutionUpdate, db: SessionL
         existing_execution.description = execution.description.strip() if execution.description else ""
         existing_execution.jenkins_job = execution.jenkins_job.strip()
         existing_execution.project_id = execution.project_id
+        existing_execution.email_recipients = execution.email_recipients.strip() if execution.email_recipients else None
         
         db.commit()
         db.refresh(existing_execution)
@@ -333,8 +339,8 @@ def run_jenkins_job(execution_id: int, db: SessionLocal = Depends(get_db)):
             print(f"[DEBUG] Could not check Jenkins job status: {e}")
             # Tiếp tục nếu không thể kiểm tra được
         
-        # URL để trigger Jenkins job
-        jenkins_build_url = f"{JENKINS_URL}/job/{execution.jenkins_job}/build"
+        # URL để trigger Jenkins job với parameters
+        jenkins_build_url = f"{JENKINS_URL}/job/{execution.jenkins_job}/buildWithParameters"
         
         try:
             # Sử dụng session để lấy crumb và trigger job
@@ -352,10 +358,15 @@ def run_jenkins_job(execution_id: int, db: SessionLocal = Depends(get_db)):
             else:
                 print(f"Failed to get crumb: {crumb_response.status_code} - {crumb_response.text}")
             
-            # Gọi Jenkins API để trigger job (không cần parameters)
+            # Gọi Jenkins API để trigger job với TASK_ID parameter
+            data = {
+                'TASK_ID': execution.task_id
+            }
+            
             response = session.post(
                 jenkins_build_url,
                 headers=headers,
+                data=data,
                 timeout=30
             )
             
