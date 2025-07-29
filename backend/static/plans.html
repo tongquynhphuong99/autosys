@@ -298,15 +298,15 @@
             color: #004085;
         }
         .action-btn {
-            padding: 10px 18px;
-            border-radius: 8px;
+            padding: 8px 12px;
+            border-radius: 6px;
             border: none;
-            font-size: 12px;
+            font-size: 11px;
             font-weight: 600;
             cursor: pointer;
-            margin-right: 12px;
+            margin-right: 6px;
             transition: all 0.3s ease;
-            min-width: 85px;
+            min-width: 60px;
             text-align: center;
         }
         .btn-run {
@@ -503,7 +503,7 @@
                 <select id="projectSelect" style="padding: 8px 12px; border: 2px solid #e1e5e9; border-radius: 8px; font-size: 14px; min-width: 200px;"></select>
             </div>
             <form id="planForm">
-                <div class="form-row" style="grid-template-columns: 1.2fr 2fr 1fr 1.5fr auto; gap: 20px; align-items: start;">
+                <div class="form-row" style="grid-template-columns: 1.2fr 2fr 1fr 1.5fr 1fr auto; gap: 20px; align-items: start;">
                     <div class="form-group">
                         <label for="planName">Tên Plan</label>
                         <input type="text" id="planName" name="plan_name" placeholder="Tên kế hoạch" required>
@@ -524,6 +524,10 @@
                         <small style="color: #666; font-size: 11px; margin-top: 4px; display: block;">
                             Format: "phút giờ ngày tháng thứ" (VD: 0 9 * * 1-5 = 9h sáng thứ 2-6)
                         </small>
+                    </div>
+                    <div class="form-group">
+                        <label for="emailRecipients">Email người nhận</label>
+                        <input type="text" id="emailRecipients" name="email_recipients" placeholder="email1@company.com, email2@company.com" style="font-size: 12px;">
                     </div>
                     <div class="form-actions" style="margin-top: 0; align-self: start;">
                         <button type="submit" class="btn btn-primary" style="width: 100%; min-width: 120px; height: 45px;">➕ Thêm Plan</button>
@@ -571,6 +575,10 @@
                     <div class="form-group" style="margin-bottom: 20px;">
                         <label for="editPlanDescription">Mô tả</label>
                         <textarea id="editPlanDescription" name="description" placeholder="Mô tả chi tiết về plan" rows="3"></textarea>
+                    </div>
+                    <div class="form-group" style="margin-bottom: 20px;">
+                        <label for="editEmailRecipients">Email người nhận</label>
+                        <input type="text" id="editEmailRecipients" name="email_recipients" placeholder="email1@company.com, email2@company.com" style="font-size: 12px;">
                     </div>
                     <div class="form-group" style="margin-bottom: 20px;">
                         <small style="color: #666; font-size: 11px; margin-top: 4px; display: block;">
@@ -623,9 +631,13 @@
                 if (projectId) {
                     currentProjectId = projectId;
                     loadPlansByProject(projectId);
+                    // Load Jenkins jobs theo project
+                    loadJenkinsJobsByProject(projectId);
                 } else {
                     currentProjectId = null;
                     loadAllPlans();
+                    // Reset Jenkins jobs dropdown
+                    resetJenkinsJobsDropdown();
                 }
             };
         }
@@ -697,6 +709,7 @@
                                 <th>Mô tả</th>
                                 <th>Jenkins Job</th>
                                 <th>Cron Schedule</th>
+                                <th>Email người nhận</th>
                                 <th>Trạng thái</th>
                                 <th>Thao tác</th>
                             </tr>
@@ -710,6 +723,13 @@
                                     <td class="description-col">${plan.description || '-'}</td>
                                     <td class="jenkins-col"><code style="background: #f8f9fa; padding: 2px 6px; border-radius: 4px; font-size: 12px;">${plan.jenkins_job || '-'}</code></td>
                                     <td>${formatDateTime(plan.schedule_time)}</td>
+                                    <td class="email-col">
+                                        ${plan.email_recipients ? 
+                                            `<span style="background: #fff3cd; color: #856404; padding: 2px 6px; border-radius: 4px; font-size: 11px; display: block; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${plan.email_recipients}">📧 ${plan.email_recipients.split(',')[0].trim()}${plan.email_recipients.split(',').length > 1 ? ' +' + (plan.email_recipients.split(',').length - 1) : ''}</span>` 
+                                            : 
+                                            '<span style="color: #6c757d; font-size: 11px;">-</span>'
+                                        }
+                                    </td>
                                     <td><span class="execution-status status-${plan.status || 'pending'}">${getStatusText(plan.status)}</span></td>
                                     <td class="actions-col">
                                         <button class="action-btn btn-run" onclick="runPlan(${plan.id})">▶️ Chạy</button>
@@ -745,6 +765,7 @@
                                 <th>Mô tả</th>
                                 <th>Jenkins Job</th>
                                 <th>Cron Schedule</th>
+                                <th>Email người nhận</th>
                                 <th>Trạng thái</th>
                                 <th>Thao tác</th>
                             </tr>
@@ -758,6 +779,13 @@
                                     <td class="description-col">${plan.description || '-'}</td>
                                     <td class="jenkins-col"><code style="background: #f8f9fa; padding: 2px 6px; border-radius: 4px; font-size: 12px;">${plan.jenkins_job || '-'}</code></td>
                                     <td>${formatDateTime(plan.schedule_time)}</td>
+                                    <td class="email-col">
+                                        ${plan.email_recipients ? 
+                                            `<span style="background: #fff3cd; color: #856404; padding: 2px 6px; border-radius: 4px; font-size: 11px; display: block; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${plan.email_recipients}">📧 ${plan.email_recipients.split(',')[0].trim()}${plan.email_recipients.split(',').length > 1 ? ' +' + (plan.email_recipients.split(',').length - 1) : ''}</span>` 
+                                            : 
+                                            '<span style="color: #6c757d; font-size: 11px;">-</span>'
+                                        }
+                                    </td>
                                     <td><span class="execution-status status-${plan.status || 'pending'}">${getStatusText(plan.status)}</span></td>
                                     <td class="actions-col">
                                         <button class="action-btn btn-run" onclick="runPlan(${plan.id})">▶️ Chạy</button>
@@ -1019,7 +1047,8 @@
                 description: formData.get('description')?.trim() || '',
                 jenkins_job: jenkinsJob,
                 schedule_time: scheduleTime,
-                project_id: currentProjectId
+                project_id: currentProjectId,
+                email_recipients: formData.get('email_recipients')?.trim() || ''
             };
             try {
                 const response = await fetch(PLANS_API, {
@@ -1039,6 +1068,7 @@
                         jenkins_job: result.jenkins_job,
                         schedule_time: result.schedule_time,
                         status: result.status,
+                        email_recipients: result.email_recipients,
                         created_at: result.created_at
                     };
                     plans.unshift(newPlan);
@@ -1088,16 +1118,36 @@
             document.getElementById('editPlanDescription').value = currentEditingPlan.description || '';
             document.getElementById('editJenkinsJob').value = currentEditingPlan.jenkins_job || '';
             document.getElementById('editScheduleTime').value = currentEditingPlan.schedule_time || '';
+            document.getElementById('editEmailRecipients').value = currentEditingPlan.email_recipients || '';
             const projectSelect = document.getElementById('editProjectId');
             projectSelect.innerHTML = '<option value="">Chọn dự án</option>' +
                 projects.map(p => `<option value="${p.id}" ${p.id == currentEditingPlan.project_id ? 'selected' : ''}>${p.name}</option>`).join('');
+            
+            // Thêm event listener cho project dropdown trong modal edit
+            projectSelect.onchange = function() {
+                const selectedProjectId = this.value;
+                if (selectedProjectId) {
+                    // Load Jenkins jobs theo project được chọn
+                    loadJenkinsJobsForEditByProject(selectedProjectId, '');
+                } else {
+                    // Reset Jenkins jobs dropdown nếu không chọn project
+                    const jenkinsJobSelect = document.getElementById('editJenkinsJob');
+                    jenkinsJobSelect.innerHTML = '<option value="">Vui lòng chọn dự án trước</option>';
+                    jenkinsJobSelect.disabled = true;
+                }
+            };
+            
             document.getElementById('editModal').style.display = 'block';
-            loadJenkinsJobsForEditPlans(currentEditingPlan.jenkins_job);
+            loadJenkinsJobsForEditByProject(currentEditingPlan.project_id, currentEditingPlan.jenkins_job);
         }
         function closeEditModal() {
             document.getElementById('editModal').style.display = 'none';
             currentEditingPlan = null;
             document.getElementById('editPlanForm').reset();
+            
+            // Reset event listener cho project dropdown
+            const projectSelect = document.getElementById('editProjectId');
+            projectSelect.onchange = null;
         }
         document.getElementById('editPlanForm').addEventListener('submit', async function(e) {
             e.preventDefault();
@@ -1157,7 +1207,8 @@
                 description: formData.get('description')?.trim() || '',
                 jenkins_job: jenkinsJob,
                 schedule_time: scheduleTime,
-                project_id: projectId
+                project_id: projectId,
+                email_recipients: formData.get('email_recipients')?.trim() || ''
             };
             try {
                 const response = await fetch(`${PLANS_API}/${currentEditingPlan.id}`, {
@@ -1179,6 +1230,7 @@
                             jenkins_job: result.jenkins_job,
                             schedule_time: result.schedule_time,
                             status: result.status,
+                            email_recipients: result.email_recipients,
                             created_at: result.created_at
                         };
                     }
@@ -1249,6 +1301,38 @@
                 }
             }
         }
+
+        async function loadJenkinsJobsByProject(projectId) {
+            const select = document.getElementById('jenkinsJob');
+            try {
+                select.innerHTML = '<option value="">Đang tải danh sách jobs...</option>';
+                select.disabled = true;
+                const res = await fetch(`/api/projects/jenkins/jobs/by-project/${projectId}`);
+                if (!res.ok) throw new Error('Lỗi tải jobs');
+                const data = await res.json();
+                if (!data.jobs || !data.jobs.length) {
+                    select.innerHTML = '<option value="">Không có Jenkins job nào cho dự án này</option>';
+                    select.disabled = true;
+                    return;
+                }
+                let options = '<option value="">-- Chọn Jenkins job --</option>';
+                data.jobs.forEach(job => {
+                    options += `<option value="${job.name}">${job.name}</option>`;
+                });
+                select.innerHTML = options;
+                select.disabled = false;
+            } catch (e) {
+                select.innerHTML = `<option value="">Không lấy được danh sách Jenkins jobs</option>`;
+                select.disabled = true;
+            }
+        }
+
+        function resetJenkinsJobsDropdown() {
+            const select = document.getElementById('jenkinsJob');
+            select.innerHTML = '<option value="">Vui lòng chọn dự án trước</option>';
+            select.disabled = true;
+        }
+
         async function loadJenkinsJobsForPlans(selectedJob) {
             const select = document.getElementById('jenkinsJob');
             try {
@@ -1273,6 +1357,36 @@
                 select.disabled = true;
             }
         }
+        async function loadJenkinsJobsForEditByProject(projectId, selectedJob) {
+            const select = document.getElementById('editJenkinsJob');
+            try {
+                select.innerHTML = '<option value="">Đang tải danh sách jobs...</option>';
+                select.disabled = true;
+                const res = await fetch(`/api/projects/jenkins/jobs/by-project/${projectId}`);
+                if (!res.ok) throw new Error('Lỗi tải jobs');
+                const data = await res.json();
+                if (!data.jobs || !data.jobs.length) {
+                    select.innerHTML = '<option value="">Không có Jenkins job nào cho dự án này</option>';
+                    select.disabled = true;
+                    return;
+                }
+                let options = '<option value="">-- Chọn Jenkins job --</option>';
+                data.jobs.forEach(job => {
+                    options += `<option value="${job.name}">${job.name}</option>`;
+                });
+                // Nếu có selectedJob mà không nằm trong danh sách thì thêm vào đầu
+                if (selectedJob && !data.jobs.some(j => j.name === selectedJob)) {
+                    options = `<option value="${selectedJob}" selected>${selectedJob} (không có trong Jenkins)</option>` + options;
+                }
+                select.innerHTML = options;
+                if (selectedJob) select.value = selectedJob;
+                select.disabled = false;
+            } catch (e) {
+                select.innerHTML = `<option value="">Không lấy được danh sách Jenkins jobs</option>`;
+                select.disabled = true;
+            }
+        }
+
         async function loadJenkinsJobsForEditPlans(selectedJob) {
             const select = document.getElementById('editJenkinsJob');
             try {
@@ -1325,7 +1439,8 @@
             document.querySelector('.logout-btn').addEventListener('click', logout);
             checkAuth();
             loadProjects();
-            loadJenkinsJobsForPlans();
+            // Không load Jenkins jobs ngay từ đầu, chỉ khi chọn project
+            resetJenkinsJobsDropdown();
         });
     </script>
     <script src="/static/notification-component.js"></script>

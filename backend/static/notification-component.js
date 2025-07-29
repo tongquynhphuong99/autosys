@@ -105,6 +105,11 @@ class NotificationComponent {
         try {
             const response = await fetch('/api/reports/notifications/list?limit=10');
             if (!response.ok) {
+                if (response.status === 401) {
+                    // Session hết hạn, chuyển về login mà không hiển thị lỗi
+                    window.location.href = '/login';
+                    return;
+                }
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
             
@@ -117,7 +122,10 @@ class NotificationComponent {
             
         } catch (error) {
             console.error('Error loading notifications:', error);
-            this.showError('Lỗi tải thông báo');
+            // Chỉ hiển thị lỗi nếu không phải lỗi 401
+            if (!error.message.includes('401')) {
+                this.showError('Lỗi tải thông báo');
+            }
         }
     }
 
@@ -182,11 +190,17 @@ class NotificationComponent {
                     this.renderNotifications();
                 }
             } else {
+                if (response.status === 401) {
+                    window.location.href = '/login';
+                    return;
+                }
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
         } catch (error) {
             console.error('Error marking as read:', error);
-            this.showError('Lỗi đánh dấu đã đọc');
+            if (!error.message.includes('401')) {
+                this.showError('Lỗi đánh dấu đã đọc');
+            }
         }
     }
 
@@ -204,11 +218,17 @@ class NotificationComponent {
                 this.renderNotifications();
                 this.showSuccess('Đã đánh dấu tất cả đã đọc');
             } else {
+                if (response.status === 401) {
+                    window.location.href = '/login';
+                    return;
+                }
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
         } catch (error) {
             console.error('Error marking all as read:', error);
-            this.showError('Lỗi đánh dấu đã đọc');
+            if (!error.message.includes('401')) {
+                this.showError('Lỗi đánh dấu đã đọc');
+            }
         }
     }
 
@@ -231,11 +251,17 @@ class NotificationComponent {
                 this.renderNotifications();
                 this.showSuccess(result.message || 'Đã xóa tất cả thông báo');
             } else {
+                if (response.status === 401) {
+                    window.location.href = '/login';
+                    return;
+                }
                 throw new Error(`HTTP error! status: ${response.status}`);
             }
         } catch (error) {
             console.error('Error clearing all notifications:', error);
-            this.showError('Lỗi xóa thông báo');
+            if (!error.message.includes('401')) {
+                this.showError('Lỗi xóa thông báo');
+            }
         }
     }
 

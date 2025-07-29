@@ -656,15 +656,115 @@
     </div>
 
     <script>
+        const API_BASE = '/api';
         let currentOffset = 0;
         let currentLimit = 100;
         let totalLogs = 0;
         let autoRefreshInterval;
 
+        // Authentication and user management
+        async function checkAuth() {
+            try {
+                const token = localStorage.getItem('testops_token');
+                if (!token) {
+                    window.location.href = '/login';
+                    return;
+                }
+                
+                console.log('Calling auth API...');
+                fetch(`${API_BASE}/auth/me`, {
+                    headers: { 'Authorization': 'Bearer ' + token }
+                })
+                .then(response => {
+                    console.log('Auth response status:', response.status);
+                    return response.ok ? response.json() : Promise.reject();
+                })
+                .then(data => {
+                    console.log('Auth data:', data);
+                    const userNameElement = document.getElementById('userName');
+                    if (userNameElement) {
+                        userNameElement.textContent = data.full_name;
+                        console.log('=== CHECK AUTH SUCCESS ===');
+                    } else {
+                        console.error('userName element not found!');
+                    }
+                })
+                .catch((error) => {
+                    console.error('Auth error:', error);
+                    // Try to get user from localStorage as fallback
+                    const user = localStorage.getItem('testops_user');
+                    if (user) {
+                        try {
+                            const userData = JSON.parse(user);
+                            const userNameElement = document.getElementById('userName');
+                            if (userNameElement) {
+                                userNameElement.textContent = userData.full_name || 'Admin';
+                            }
+                        } catch (e) {
+                            console.error('Error parsing user data:', e);
+                        }
+                    } else {
+                        localStorage.removeItem('testops_token');
+                        localStorage.removeItem('testops_user');
+                        window.location.href = '/login';
+                    }
+                });
+            } catch (error) {
+                console.error('Error in checkAuth:', error);
+            }
+        }
+        
+        // Logout function
+        function logout() {
+            localStorage.removeItem('testops_token');
+            localStorage.removeItem('testops_user');
+            window.location.href = '/login';
+        }
+
         // Initialize page
         document.addEventListener('DOMContentLoaded', function() {
-            loadLogs();
-            startAutoRefresh();
+            try {
+                console.log('=== DOM CONTENT LOADED ===');
+                
+                // Test basic DOM elements
+                const logoutBtn = document.querySelector('.logout-btn');
+                const userNameElement = document.getElementById('userName');
+                
+                console.log('Logout button:', logoutBtn);
+                console.log('User name element:', userNameElement);
+                
+                if (logoutBtn) {
+                    logoutBtn.addEventListener('click', logout);
+                    console.log('Logout button event added');
+                } else {
+                    console.error('Logout button not found!');
+                }
+                
+                // Test if functions exist
+                console.log('checkAuth function:', typeof checkAuth);
+                console.log('logout function:', typeof logout);
+                
+                // Ensure DOM is ready before calling functions
+                setTimeout(() => {
+                    try {
+                        console.log('=== TIMEOUT CALLBACK ===');
+                        if (typeof checkAuth === 'function') {
+                            checkAuth();
+                            console.log('checkAuth called');
+                        } else {
+                            console.error('checkAuth function not found!');
+                        }
+                    } catch (error) {
+                        console.error('Error in timeout callback:', error);
+                    }
+                }, 100);
+                
+                // Load logs and start auto refresh
+                loadLogs();
+                startAutoRefresh();
+            } catch (error) {
+                console.error('Error in DOMContentLoaded:', error);
+            }
         });
 
         // Load logs with filters

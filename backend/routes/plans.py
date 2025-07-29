@@ -27,6 +27,7 @@ def get_plans(db: Session = Depends(get_db)):
                     "jenkins_job": plan.jenkins_job,
                     "schedule_time": plan.schedule_time,
                     "status": plan.status,
+                    "email_recipients": plan.email_recipients,
                     "created_at": plan.created_at.isoformat() if plan.created_at else None
                 }
                 for plan in plans
@@ -70,6 +71,7 @@ def get_plans_by_project(project_id: int, db: Session = Depends(get_db)):
                     "jenkins_job": plan.jenkins_job,
                     "schedule_time": plan.schedule_time,
                     "status": plan.status,
+                    "email_recipients": plan.email_recipients,
                     "created_at": plan.created_at.isoformat() if plan.created_at else None
                 }
                 for plan in plans
@@ -132,6 +134,7 @@ def create_plan(plan_data: dict, db: Session = Depends(get_db)):
             project_id=project_id,
             jenkins_job=plan_data["jenkins_job"].strip(),
             schedule_time=cron_schedule,
+            email_recipients=plan_data.get("email_recipients", "").strip() if plan_data.get("email_recipients") else None,
             status="initialized"
         )
         
@@ -153,6 +156,7 @@ def create_plan(plan_data: dict, db: Session = Depends(get_db)):
             "jenkins_job": new_plan.jenkins_job,
             "schedule_time": new_plan.schedule_time,
             "status": new_plan.status,
+            "email_recipients": new_plan.email_recipients,
             "created_at": new_plan.created_at.isoformat() if new_plan.created_at else None
         }
     except HTTPException:
@@ -201,6 +205,8 @@ def update_plan(plan_id: int, plan_data: dict, db: Session = Depends(get_db)):
             if not cron_schedule or len(cron_schedule.split()) != 5:
                 raise HTTPException(status_code=400, detail="Invalid cron schedule format. Expected: 'minute hour day month weekday'")
             plan.schedule_time = cron_schedule
+        if "email_recipients" in plan_data:
+            plan.email_recipients = plan_data["email_recipients"].strip() if plan_data["email_recipients"] else None
         
         db.commit()
         db.refresh(plan)
@@ -219,6 +225,7 @@ def update_plan(plan_id: int, plan_data: dict, db: Session = Depends(get_db)):
             "jenkins_job": plan.jenkins_job,
             "schedule_time": plan.schedule_time,
             "status": plan.status,
+            "email_recipients": plan.email_recipients,
             "created_at": plan.created_at.isoformat() if plan.created_at else None
         }
     except HTTPException:
@@ -409,9 +416,14 @@ def delete_plan(plan_id: int, db: Session = Depends(get_db)):
         db.rollback()
         raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
 
-def ensure_timer_trigger(xml, cron_schedule):
+def ensure_timer_trigger(xml, cron_schedule, task_id=None):
     import re
-    trigger_block = f'''<org.jenkinsci.plugins.workflow.job.properties.PipelineTriggersJobProperty>\n  <triggers>\n    <hudson.triggers.TimerTrigger><spec>{cron_schedule}</spec></hudson.triggers.TimerTrigger>\n  </triggers>\n</org.jenkinsci.plugins.workflow.job.properties.PipelineTriggersJobProperty>\n'''
+    # Tạo cron schedule với TASK_ID parameter nếu có
+    if task_id:
+        # Thêm TASK_ID vào cron schedule bằng cách sử dụng Jenkins parameter
+        trigger_block = f'''<org.jenkinsci.plugins.workflow.job.properties.PipelineTriggersJobProperty>\n  <triggers>\n    <hudson.triggers.TimerTrigger><spec>{cron_schedule}</spec></hudson.triggers.TimerTrigger>\n  </triggers>\n</org.jenkinsci.plugins.workflow.job.properties.PipelineTriggersJobProperty>\n'''
+    else:
+        trigger_block = f'''<org.jenkinsci.plugins.workflow.job.properties.PipelineTriggersJobProperty>\n  <triggers>\n    <hudson.triggers.TimerTrigger><spec>{cron_schedule}</spec></hudson.triggers.TimerTrigger>\n  </triggers>\n</org.jenkinsci.plugins.workflow.job.properties.PipelineTriggersJobProperty>\n'''
     # Xóa tất cả block PipelineTriggersJobProperty (dù nằm đâu)
     xml = re.sub(r'<org.jenkinsci.plugins.workflow.job.properties.PipelineTriggersJobProperty>[\s\S]*?</org.jenkinsci.plugins.workflow.job.properties.PipelineTriggersJobProperty>', '', xml)
     # Đảm bảo chỉ còn một <properties>...</properties> hoặc thay thế <properties/> nếu có
@@ -439,6 +451,78 @@ def remove_timer_trigger(xml):
         # Nếu còn block TimerTrigger rỗng, xóa luôn
         xml = re.sub(r'<hudson.triggers.TimerTrigger>\s*</hudson.triggers.TimerTrigger>', '', xml, flags=re.DOTALL)
     return xml
+
+def update_plan_default_value(job_name: str, task_id: str, cron_schedule: str = None):
+    """Cập nhật defaultValue cho TASK_ID parameter và schedule trong Jenkins job config"""
+    try:
+        JENKINS_URL = os.getenv("JENKINS_URL", "http://localhost:8080")
+        
+        # Lấy config hiện tại
+        config_url = f"{JENKINS_URL}/job/{job_name}/config.xml"
+        
+        # Sử dụng session để lấy CSRF crumb
+        session = requests.Session()
+        
+        # Get CSRF crumb from Jenkins
+        crumb_url = f"{JENKINS_URL}/crumbIssuer/api/json"
+        crumb_response = session.get(crumb_url, timeout=30)
+        
+        headers = {'Content-Type': 'application/xml'}
+        if crumb_response.status_code == 200:
+            crumb_data = crumb_response.json()
+            headers[crumb_data['crumbRequestField']] = crumb_data['crumb']
+            print(f"[DEBUG] Got crumb: {crumb_data['crumb']}")
+        else:
+            print(f"[WARNING] Failed to get crumb: {crumb_response.status_code}")
+        
+        response = session.get(config_url, headers=headers, timeout=30)
+        
+        if response.status_code == 200:
+            current_config = response.text
+            
+            # Cập nhật defaultValue cho TASK_ID
+            task_id_pattern = r'(<hudson\.model\.StringParameterDefinition>\s*<name>TASK_ID</name>.*?<trim>false</trim>)'
+            task_id_replacement = f'<hudson.model.StringParameterDefinition>\n          <name>TASK_ID</name>\n          <description>Task ID from TestOps (e.g., TASK-001, PLAN-001, CICD-001)</description>\n          <defaultValue>{task_id}</defaultValue>\n          <trim>false</trim>'
+            
+            # Thử cập nhật với pattern hiện tại
+            updated_config = re.sub(task_id_pattern, task_id_replacement, current_config, flags=re.DOTALL)
+            
+            # Kiểm tra xem có thay đổi không
+            if updated_config == current_config:
+                # Nếu không thay đổi, thử pattern khác (không có description)
+                task_id_pattern2 = r'(<hudson\.model\.StringParameterDefinition>\s*<name>TASK_ID</name>\s*<trim>false</trim>)'
+                task_id_replacement2 = f'<hudson.model.StringParameterDefinition>\n          <name>TASK_ID</name>\n          <description>Task ID from TestOps (e.g., TASK-001, PLAN-001, CICD-001)</description>\n          <defaultValue>{task_id}</defaultValue>\n          <trim>false</trim>'
+                updated_config = re.sub(task_id_pattern2, task_id_replacement2, current_config, flags=re.DOTALL)
+            
+            # Nếu có cron_schedule, cũng cập nhật lại schedule
+            if cron_schedule:
+                # Cập nhật TimerTrigger spec
+                spec_pattern = r'(<hudson\.triggers\.TimerTrigger>\s*<spec>).*?(</spec>\s*</hudson\.triggers\.TimerTrigger>)'
+                spec_replacement = f'\\1{cron_schedule}\\2'
+                updated_config = re.sub(spec_pattern, spec_replacement, updated_config, flags=re.DOTALL)
+                print(f"[DEBUG] Đã cập nhật schedule: {cron_schedule}")
+            
+            # Gửi config đã cập nhật về Jenkins với CSRF crumb
+            update_response = session.post(
+                config_url,
+                data=updated_config,
+                headers=headers,
+                timeout=30
+            )
+            
+            if update_response.status_code == 200:
+                print(f"[DEBUG] Đã cập nhật defaultValue cho {job_name}: {task_id}")
+                return True
+            else:
+                print(f"[ERROR] Không thể cập nhật config cho {job_name}: {update_response.status_code}")
+                return False
+        else:
+            print(f"[ERROR] Không thể lấy config cho {job_name}: {response.status_code}")
+            return False
+            
+    except Exception as e:
+        print(f"[ERROR] Lỗi cập nhật defaultValue: {e}")
+        return False
 
 @router.post("/{plan_id}/run")
 def run_plan(plan_id: int, db: Session = Depends(get_db)):
@@ -488,10 +572,15 @@ def run_plan(plan_id: int, db: Session = Depends(get_db)):
                 # Check if it's a pipeline job
                 if 'flow-definition' in current_config:
                     print(f"[DEBUG] This is a Pipeline job, ensuring TimerTrigger exists or is updated")
-                    updated_config = ensure_timer_trigger(current_config, plan.schedule_time)
+                    updated_config = ensure_timer_trigger(current_config, plan.schedule_time, plan.plan_id)
                     
                     # Add webhook URL for plan report with task_type and task_id
                     webhook_url = f"http://backend:8000/api/reports/jenkins/webhook"
+                    
+                                        # Cập nhật defaultValue cho TASK_ID parameter
+                    task_id_pattern = r'(<hudson\.model\.StringParameterDefinition>\s*<name>TASK_ID</name>.*?<trim>false</trim>)'
+                    task_id_replacement = f'<hudson.model.StringParameterDefinition>\n          <name>TASK_ID</name>\n          <description>Task ID from TestOps (e.g., TASK-001, PLAN-001, CICD-001)</description>\n          <defaultValue>{plan.plan_id}</defaultValue>\n          <trim>false</trim>'
+                    updated_config = re.sub(task_id_pattern, task_id_replacement, updated_config, flags=re.DOTALL)
                     
                     # Add post-build action to call webhook with task_type and task_id
                     # This is a simplified approach - in production you'd need proper XML manipulation
@@ -508,7 +597,7 @@ def run_plan(plan_id: int, db: Session = Depends(get_db)):
       <passBuildParameters>false</passBuildParameters>
       <passAllBuildParameters>false</passAllBuildParameters>
       <customHeaders/>
-      <json>{{"name": "{plan.jenkins_job}", "build": {{"number": "${{BUILD_NUMBER}}", "result": "${{BUILD_RESULT}}", "status": "FINISHED"}}, "task_type": "plan", "task_id": "{plan.id}"}}</json>
+      <json>{{"name": "{plan.jenkins_job}", "build": {{"number": "${{BUILD_NUMBER}}", "result": "${{BUILD_RESULT}}", "status": "FINISHED"}}, "task_type": "plan", "task_id": "{plan.plan_id}"}}</json>
       <timeout>30000</timeout>
       <consoleLogResponseBody>false</consoleLogResponseBody>
       <quiet>false</quiet>
@@ -520,7 +609,7 @@ def run_plan(plan_id: int, db: Session = Depends(get_db)):
                         # Update existing webhook URL in publishers section only
                         webhook_url_pattern = r'(<publishers>.*?<json>)(.*?)(</json>.*?</publishers>)'
                         if re.search(webhook_url_pattern, updated_config, re.DOTALL):
-                            new_json = f'{{"name": "{plan.jenkins_job}", "build": {{"number": "${{BUILD_NUMBER}}", "result": "${{BUILD_RESULT}}", "status": "FINISHED"}}, "task_type": "plan", "task_id": "{plan.id}"}}'
+                            new_json = f'{{"name": "{plan.jenkins_job}", "build": {{"number": "${{BUILD_NUMBER}}", "result": "${{BUILD_RESULT}}", "status": "FINISHED"}}, "task_type": "plan", "task_id": "{plan.plan_id}"}}'
                             updated_config = re.sub(webhook_url_pattern, f'\\1{new_json}\\3', updated_config, flags=re.DOTALL)
                             print(f"[DEBUG] Updated existing webhook JSON to include task_type and task_id")
                         else:

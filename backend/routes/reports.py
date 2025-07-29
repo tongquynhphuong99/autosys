@@ -15,6 +15,16 @@ def process_plan_webhook(plan, job_name, build_number, build_result, body, db):
     """Xử lý webhook cho plan task"""
     print(f"[DEBUG] Processing webhook for plan: {plan.plan_name}")
     
+    # Cập nhật lại defaultValue cho TASK_ID và schedule sau khi job chạy xong
+    try:
+        from routes.plans import update_plan_default_value
+        plan_task_id = f"PLAN-{plan.id:03d}"
+        # Gọi hàm update_plan_default_value để cập nhật defaultValue và schedule
+        update_plan_default_value(job_name, plan_task_id, plan.schedule_time)
+        print(f"[DEBUG] Đã cập nhật defaultValue và schedule cho {job_name}: {plan_task_id}")
+    except Exception as e:
+        print(f"[WARNING] Không thể cập nhật defaultValue và schedule: {e}")
+    
     # Lấy thông tin project
     project = db.query(Project).filter(Project.id == plan.project_id).first()
     if not project:
@@ -108,6 +118,46 @@ def process_plan_webhook(plan, job_name, build_number, build_result, body, db):
         print(f"✅ Webhook: Đã lưu report cho plan '{plan.plan_name}' - Build #{build_number}")
         
         log_backend_event("INFO", f"Webhook: Saved report for plan '{plan.plan_name}' - Build #{build_number}", db)
+        
+        # Gửi email notification nếu có email recipients
+        if plan.email_recipients and plan.email_recipients.strip():
+            try:
+                from routes.email import EmailService
+                
+                # Parse email recipients
+                recipients = [email.strip() for email in plan.email_recipients.split(',') if email.strip()]
+                
+                if recipients:
+                    # Gửi email report
+                    email_service = EmailService()
+                    email_result = email_service.send_task_report_email({
+                        'task_id': plan.plan_id,
+                        'task_name': plan.plan_name,
+                        'project_name': project.name,
+                        'project_id': plan.project_id,
+                        'result': build_result,
+                        'job_name': job_name,
+                        'build_number': str(build_number),
+                        'recipients': recipients,
+                        'duration': duration_seconds,
+                        'start_time': report.start_time.strftime('%Y-%m-%d %H:%M:%S') if report.start_time else 'N/A',
+                        'end_time': report.end_time.strftime('%Y-%m-%d %H:%M:%S') if report.end_time else 'N/A',
+                        'passed': passed_tests,
+                        'total': total_tests
+                    })
+                    
+                    if email_result.get('success'):
+                        print(f"✅ Email sent successfully to {len(recipients)} recipients for task {plan.plan_id}")
+                        log_backend_event("INFO", f"Email sent successfully for task {plan.plan_id} to {len(recipients)} recipients", db)
+                    else:
+                        print(f"❌ Failed to send email for task {plan.plan_id}: {email_result.get('error')}")
+                        log_backend_event("ERROR", f"Failed to send email for task {plan.plan_id}: {email_result.get('error')}", db)
+                        
+            except Exception as e:
+                print(f"❌ Error sending email for task {plan.plan_id}: {e}")
+                log_backend_event("ERROR", f"Error sending email for task {plan.plan_id}: {e}", db)
+        else:
+            print(f"ℹ️ No email recipients configured for task {plan.plan_id}")
         
         # Tạo thông báo cho plan
         try:
@@ -244,6 +294,46 @@ def process_execution_webhook(execution, job_name, build_number, build_result, b
         
         log_backend_event("INFO", f"Webhook: Saved report for execution '{execution.task_name}' - Build #{build_number}", db)
         
+        # Gửi email notification nếu có email recipients
+        if execution.email_recipients and execution.email_recipients.strip():
+            try:
+                from routes.email import EmailService
+                
+                # Parse email recipients
+                recipients = [email.strip() for email in execution.email_recipients.split(',') if email.strip()]
+                
+                if recipients:
+                    # Gửi email report
+                    email_service = EmailService()
+                    email_result = email_service.send_task_report_email({
+                        'task_id': execution.task_id,
+                        'task_name': execution.task_name,
+                        'project_name': project.name,
+                        'project_id': execution.project_id,
+                        'result': build_result,
+                        'job_name': job_name,
+                        'build_number': str(build_number),
+                        'recipients': recipients,
+                        'duration': duration_seconds,
+                        'start_time': report.start_time.strftime('%Y-%m-%d %H:%M:%S') if report.start_time else 'N/A',
+                        'end_time': report.end_time.strftime('%Y-%m-%d %H:%M:%S') if report.end_time else 'N/A',
+                        'passed': passed_tests,
+                        'total': total_tests
+                    })
+                    
+                    if email_result.get('success'):
+                        print(f"✅ Email sent successfully to {len(recipients)} recipients for task {execution.task_id}")
+                        log_backend_event("INFO", f"Email sent successfully for task {execution.task_id} to {len(recipients)} recipients", db)
+                    else:
+                        print(f"❌ Failed to send email for task {execution.task_id}: {email_result.get('error')}")
+                        log_backend_event("ERROR", f"Failed to send email for task {execution.task_id}: {email_result.get('error')}", db)
+                        
+            except Exception as e:
+                print(f"❌ Error sending email for task {execution.task_id}: {e}")
+                log_backend_event("ERROR", f"Error sending email for task {execution.task_id}: {e}", db)
+        else:
+            print(f"ℹ️ No email recipients configured for task {execution.task_id}")
+        
         # Tạo thông báo cho execution
         try:
             create_notification(
@@ -282,6 +372,15 @@ def process_execution_webhook(execution, job_name, build_number, build_result, b
 def process_cicd_webhook(cicd, job_name, build_number, build_result, body, db):
     """Xử lý webhook cho CI/CD task"""
     print(f"[DEBUG] Processing webhook for CI/CD task: {cicd.cicd_name}")
+    
+    # Cập nhật lại defaultValue cho TASK_ID sau khi job chạy xong
+    try:
+        from routes.cicd import configure_jenkins_webhook_trigger
+        cicd_task_id = f"CICD-{cicd.id:03d}"
+        configure_jenkins_webhook_trigger(job_name, cicd_task_id)
+        print(f"[DEBUG] Đã cập nhật defaultValue cho {job_name}: {cicd_task_id}")
+    except Exception as e:
+        print(f"[WARNING] Không thể cập nhật defaultValue: {e}")
     
     # Lấy thông tin project
     project = db.query(Project).filter(Project.id == cicd.project_id).first()
@@ -378,6 +477,46 @@ def process_cicd_webhook(cicd, job_name, build_number, build_result, body, db):
         print(f"✅ Webhook: Đã lưu report cho CI/CD '{cicd.cicd_name}' - Build #{build_number}")
         
         log_backend_event("INFO", f"Webhook: Saved report for CI/CD '{cicd.cicd_name}' - Build #{build_number}", db)
+        
+        # Gửi email notification nếu có email recipients
+        if cicd.email_recipients and cicd.email_recipients.strip():
+            try:
+                from routes.email import EmailService
+                
+                # Parse email recipients
+                recipients = [email.strip() for email in cicd.email_recipients.split(',') if email.strip()]
+                
+                if recipients:
+                    # Gửi email report
+                    email_service = EmailService()
+                    email_result = email_service.send_task_report_email({
+                        'task_id': cicd.cicd_id,
+                        'task_name': cicd.cicd_name,
+                        'project_name': project.name,
+                        'project_id': cicd.project_id,
+                        'result': build_result,
+                        'job_name': job_name,
+                        'build_number': str(build_number),
+                        'recipients': recipients,
+                        'duration': duration_seconds,
+                        'start_time': report.start_time.strftime('%Y-%m-%d %H:%M:%S') if report.start_time else 'N/A',
+                        'end_time': report.end_time.strftime('%Y-%m-%d %H:%M:%S') if report.end_time else 'N/A',
+                        'passed': passed_tests,
+                        'total': total_tests
+                    })
+                    
+                    if email_result.get('success'):
+                        print(f"✅ Email sent successfully to {len(recipients)} recipients for task {cicd.cicd_id}")
+                        log_backend_event("INFO", f"Email sent successfully for task {cicd.cicd_id} to {len(recipients)} recipients", db)
+                    else:
+                        print(f"❌ Failed to send email for task {cicd.cicd_id}: {email_result.get('error')}")
+                        log_backend_event("ERROR", f"Failed to send email for task {cicd.cicd_id}: {email_result.get('error')}", db)
+                        
+            except Exception as e:
+                print(f"❌ Error sending email for task {cicd.cicd_id}: {e}")
+                log_backend_event("ERROR", f"Error sending email for task {cicd.cicd_id}: {e}", db)
+        else:
+            print(f"ℹ️ No email recipients configured for task {cicd.cicd_id}")
         
         # Tạo thông báo cho CI/CD
         try:
@@ -1318,6 +1457,45 @@ def view_jenkins_file(job_name: str, build_number: str, file_name: str):
             status_code=500
         ) 
 
+# Helper functions for task identification
+def get_task_type_from_id(task_id: str) -> str:
+    """Xác định task type từ TASK_ID"""
+    if task_id.startswith('TASK-'):
+        return 'execution'
+    elif task_id.startswith('PLAN-'):
+        return 'plan'
+    elif task_id.startswith('CICD-'):
+        return 'cicd'
+    else:
+        return None
+
+def validate_task_id_format(task_id: str) -> bool:
+    """Validate format của TASK_ID"""
+    import re
+    
+    patterns = [
+        r'^TASK-\d{3}$',  # TASK-001
+        r'^PLAN-\d{3}$',  # PLAN-001  
+        r'^CICD-\d{3}$'   # CICD-001
+    ]
+    
+    return any(re.match(pattern, task_id) for pattern in patterns)
+
+def find_task_by_id(task_id: str, db):
+    """Tìm task trong database dựa trên TASK_ID"""
+    from database import Execution, Plan, Cicd
+    
+    task_type = get_task_type_from_id(task_id)
+    
+    if task_type == 'execution':
+        return db.query(Execution).filter(Execution.task_id == task_id).first()
+    elif task_type == 'plan':
+        return db.query(Plan).filter(Plan.plan_id == task_id).first()
+    elif task_type == 'cicd':
+        return db.query(Cicd).filter(Cicd.cicd_id == task_id).first()
+    else:
+        return None
+
 @router.post("/jenkins/webhook")
 async def jenkins_webhook(request: Request):
     """Webhook endpoint để nhận thông báo từ Jenkins khi job hoàn thành"""
@@ -1340,51 +1518,79 @@ async def jenkins_webhook(request: Request):
             build_result = body.get('build', {}).get('result')
             build_status = body.get('build', {}).get('status')
             
+            # Lấy TASK_ID từ parameters hoặc từ body trực tiếp
+            parameters = body.get('build', {}).get('parameters', {})
+            task_id = parameters.get('TASK_ID') or body.get('task_id')
+            
             if not job_name or not build_number:
                 raise HTTPException(status_code=400, detail="Missing required fields: name, build.number")
             
-            print(f"[DEBUG] Processing webhook for job: {job_name}")
+            print(f"[DEBUG] Processing webhook for job: {job_name}, TASK_ID: {task_id}")
             
-            # Tìm tất cả task có cùng jenkins_job name (KHÔNG ưu tiên, lấy hết)
-            cicds = db.query(Cicd).filter(Cicd.jenkins_job == job_name).all()
-            plans = db.query(Plan).filter(Plan.jenkins_job == job_name).all()
-            executions = db.query(Execution).filter(Execution.jenkins_job == job_name).all()
-
-            processed_tasks = []
-            for cicd_task in cicds:
-                processed_tasks.append(('cicd', cicd_task))
-            for plan_task in plans:
-                processed_tasks.append(('plan', plan_task))
-            for exec_task in executions:
-                processed_tasks.append(('execution', exec_task))
-            
-            results = []
-            
-            # Xử lý khi job hoàn thành (SUCCESS, FAILURE, ABORTED)
-            if build_status == "FINISHED" and (build_result == "SUCCESS" or build_result == "FAILURE" or build_result == "ABORTED"):
-                for task_type, task in processed_tasks:
-                    try:
-                        if task_type == 'plan':
-                            result = process_plan_webhook(task, job_name, build_number, build_result, body, db)
-                            results.append(result)
-                        elif task_type == 'execution':
-                            result = process_execution_webhook(task, job_name, build_number, build_result, body, db)
-                            results.append(result)
-                        elif task_type == 'cicd':
-                            result = process_cicd_webhook(task, job_name, build_number, build_result, body, db)
-                            results.append(result)
-                    except Exception as e:
-                        print(f"[ERROR] Failed to process {task_type} task: {e}")
-                        results.append({"error": f"Failed to process {task_type} task: {str(e)}"})
-                
-                # Trả về kết quả của task đầu tiên (hoặc tất cả nếu cần)
-                if results:
-                    return results[0] if len(results) == 1 else {"message": f"Processed {len(results)} tasks", "results": results}
+            # Tìm task theo TASK_ID (bắt buộc)
+            if task_id:
+                if not validate_task_id_format(task_id):
+                    print(f"[WARNING] Invalid TASK_ID format: {task_id}")
+                    raise HTTPException(status_code=400, detail=f"Invalid TASK_ID format: {task_id}")
                 else:
-                    return {"message": "No tasks processed"}
+                    task = find_task_by_id(task_id, db)
+                    if task:
+                        task_type = get_task_type_from_id(task_id)
+                        print(f"[DEBUG] Found task by TASK_ID: {task_id} (type: {task_type})")
+                        
+                        # Xử lý khi job bắt đầu chạy (BUILDING)
+                        if build_status == "BUILDING" or build_result == "BUILDING":
+                            print(f"[DEBUG] Job {job_name} đang chạy - cập nhật trạng thái task thành 'running'")
+                            
+                            # Cập nhật trạng thái task thành 'running'
+                            if task_type == 'execution':
+                                task.status = 'running'
+                            elif task_type == 'plan':
+                                task.status = 'running'
+                            elif task_type == 'cicd':
+                                task.status = 'running'
+                            
+                            db.commit()
+                            
+                            # Tạo thông báo
+                            project = db.query(Project).filter(Project.id == task.project_id).first()
+                            project_name = project.name if project else "Unknown"
+                            
+                            create_notification(
+                                task_id=task_id,
+                                task_name=task.task_name if hasattr(task, 'task_name') else task.plan_name if hasattr(task, 'plan_name') else task.cicd_name,
+                                task_type=task_type,
+                                status='running',
+                                project_name=project_name,
+                                db=db
+                            )
+                            
+                            return {"message": f"Task {task_id} đang chạy"}
+                        
+                        # Xử lý khi job hoàn thành (SUCCESS, FAILURE, ABORTED)
+                        elif (build_status == "FINISHED" or build_result in ["SUCCESS", "FAILURE", "ABORTED"]) and (build_result == "SUCCESS" or build_result == "FAILURE" or build_result == "ABORTED"):
+                            try:
+                                if task_type == 'execution':
+                                    result = process_execution_webhook(task, job_name, build_number, build_result, body, db)
+                                elif task_type == 'plan':
+                                    result = process_plan_webhook(task, job_name, build_number, build_result, body, db)
+                                elif task_type == 'cicd':
+                                    result = process_cicd_webhook(task, job_name, build_number, build_result, body, db)
+                                
+                                return result
+                            except Exception as e:
+                                print(f"[ERROR] Failed to process task {task_id}: {e}")
+                                raise HTTPException(status_code=500, detail=f"Failed to process task: {str(e)}")
+                        else:
+                            print(f"[DEBUG] Webhook: Job {job_name} chưa hoàn thành hoặc thất bại")
+                            return {"message": "Job chưa hoàn thành hoặc thất bại"}
+                    else:
+                        print(f"[WARNING] Task not found for TASK_ID: {task_id}")
+                        raise HTTPException(status_code=404, detail=f"Task not found for TASK_ID: {task_id}")
             else:
-                print(f"[DEBUG] Webhook: Job {job_name} chưa hoàn thành hoặc thất bại")
-                return {"message": "Job chưa hoàn thành hoặc thất bại"}
+                # Không có TASK_ID - báo lỗi
+                print(f"[ERROR] No TASK_ID provided in webhook")
+                raise HTTPException(status_code=400, detail="TASK_ID is required")
                     
         finally:
             db.close()
@@ -1689,7 +1895,8 @@ def get_history_reports(
     task_type: Optional[str] = None,
     start_date: Optional[str] = None,
     end_date: Optional[str] = None,
-    limit: int = 100
+    limit: int = 10,
+    offset: int = 0
 ):
     """Lấy lịch sử reports với filter theo project, task type, và date range"""
     try:
@@ -1729,11 +1936,14 @@ def get_history_reports(
                 except ValueError:
                     pass
             
+            # Đếm tổng số records cho pagination
+            total_count = query.count()
+            
             # Sắp xếp theo thời gian mới nhất
             query = query.order_by(Report.created_at.desc())
             
-            # Giới hạn số lượng
-            query = query.limit(limit)
+            # Phân trang
+            query = query.offset(offset).limit(limit)
             
             reports = query.all()
             
@@ -1803,13 +2013,16 @@ def get_history_reports(
             
             return {
                 "history_reports": history_data,
-                "total_count": len(history_data),
+                "total": total_count,
+                "page": (offset // limit) + 1,
+                "total_pages": (total_count + limit - 1) // limit,
                 "filters": {
                     "project_id": project_id,
                     "task_type": task_type,
                     "start_date": start_date,
                     "end_date": end_date,
-                    "limit": limit
+                    "limit": limit,
+                    "offset": offset
                 }
             }
             
@@ -1849,12 +2062,14 @@ def create_notification(
     """Tạo thông báo mới khi có report được gửi về"""
     try:
         # Tạo message thông báo
-        if status.lower() == "success":
+        if status.lower() == "running":
+            message = f"🔄 {task_id} đang được chạy"
+        elif status.lower() == "success":
             message = f"✅ Report của {task_id} ({task_name}) đã hoàn thành thành công"
         elif status.lower() == "failure":
             message = f"❌ Report của {task_id} ({task_name}) đã thất bại"
         elif status.lower() == "aborted":
-            message = f"⏹️ Report của {task_id} ({task_name}) đã bị hủy"
+            message = f"⏹️ {task_id} đã bị hủy thành công"
         else:
             message = f"📊 Report của {task_id} ({task_name}) đã hoàn thành"
         

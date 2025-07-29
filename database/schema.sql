@@ -45,6 +45,7 @@ CREATE TABLE executions (
     project_id INTEGER REFERENCES projects(id) ON DELETE CASCADE,
     jenkins_job VARCHAR(200),
     status VARCHAR(20) DEFAULT 'initialized',
+    email_recipients TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -58,6 +59,7 @@ CREATE TABLE plans (
     jenkins_job VARCHAR(200),
     schedule_time VARCHAR(100) NOT NULL,
     status VARCHAR(20) DEFAULT 'initialized',
+    email_recipients TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -71,6 +73,7 @@ CREATE TABLE cicd (
     jenkins_job VARCHAR(200),
     project_id INTEGER REFERENCES projects(id) ON DELETE CASCADE,
     status VARCHAR(20) DEFAULT 'initialized',
+    email_recipients TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -129,12 +132,27 @@ CREATE TABLE notifications (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP -- Thời gian tạo
 );
 
+-- Jenkins Jobs table
+CREATE TABLE jenkins_jobs (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(200) NOT NULL,
+    project_id INTEGER REFERENCES projects(id) ON DELETE CASCADE,
+    project_name VARCHAR(200) NOT NULL,
+    repository TEXT NOT NULL,
+    status VARCHAR(20) DEFAULT 'active',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Add indexes for better performance
 CREATE INDEX idx_notifications_task_id ON notifications(task_id);
 CREATE INDEX idx_notifications_task_type ON notifications(task_type);
 CREATE INDEX idx_notifications_status ON notifications(status);
 CREATE INDEX idx_notifications_is_read ON notifications(is_read);
 CREATE INDEX idx_notifications_created_at ON notifications(created_at);
+CREATE INDEX idx_jenkins_jobs_project_id ON jenkins_jobs(project_id);
+CREATE INDEX idx_jenkins_jobs_name ON jenkins_jobs(name);
+CREATE INDEX idx_jenkins_jobs_status ON jenkins_jobs(status);
 
 -- Add comments for documentation
 COMMENT ON COLUMN cicd.cicd_id IS 'ID định danh duy nhất cho CI/CD task (format: CICD-001, CICD-002, ...)';

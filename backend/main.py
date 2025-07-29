@@ -15,6 +15,7 @@ from routes.plans import router as plans_router
 from routes.reports import router as reports_router
 from routes.log import router as logs_router
 from routes.cicd import router as cicd_router
+from routes.email import router as email_router
 from database import test_connection, create_tables
 
 app = FastAPI(
@@ -45,6 +46,7 @@ app.include_router(plans_router, prefix="/api/plans", tags=["Plans"])
 app.include_router(reports_router, prefix="/api/reports", tags=["Reports"])
 app.include_router(logs_router, prefix="/api/logs", tags=["Logs"])
 app.include_router(cicd_router, prefix="/api/cicd", tags=["CICD"])
+app.include_router(email_router, prefix="/api/email", tags=["Email"])
 
 @app.get("/health")
 def health_check():

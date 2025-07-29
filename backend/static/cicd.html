@@ -315,15 +315,15 @@
             color: #ffffff;
         }
         .action-btn {
-            padding: 10px 18px;
-            border-radius: 8px;
+            padding: 8px 12px;
+            border-radius: 6px;
             border: none;
-            font-size: 12px;
+            font-size: 11px;
             font-weight: 600;
             cursor: pointer;
-            margin-right: 12px;
+            margin-right: 6px;
             transition: all 0.3s ease;
-            min-width: 85px;
+            min-width: 60px;
             text-align: center;
         }
         .btn-edit {
@@ -491,7 +491,7 @@
                 <select id="projectSelect" style="padding: 8px 12px; border: 2px solid #e1e5e9; border-radius: 8px; font-size: 14px; min-width: 200px;"></select>
             </div>
             <form id="pipelineForm">
-                <div class="form-row" style="grid-template-columns: 1fr 1fr 1fr 1fr auto; gap: 20px; align-items: end;">
+                <div class="form-row" style="grid-template-columns: 1fr 1fr 1fr 1fr 1fr auto; gap: 20px; align-items: end;">
                     <div class="form-group">
                         <label for="cicdName">Tên CI/CD</label>
                         <input type="text" id="cicdName" name="cicd_name" placeholder="Tên CI/CD" required>
@@ -513,6 +513,10 @@
                         <select id="jenkinsJob" name="jenkins_job" required>
                             <option value="">Đang tải danh sách jobs...</option>
                         </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="emailRecipients">Email người nhận</label>
+                        <input type="text" id="emailRecipients" name="email_recipients" placeholder="email1@company.com, email2@company.com" style="font-size: 12px;">
                     </div>
                     <div class="form-actions" style="margin-top: 0; align-self: end;">
                         <button type="submit" class="btn btn-primary" style="width: 100%; min-width: 120px;">➕ Thêm CI/CD</button>
@@ -549,6 +553,20 @@
                             </select>
                         </div>
                     </div>
+                    <div class="form-row" style="grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
+                        <div class="form-group">
+                            <label for="editProjectId">Dự án</label>
+                            <select id="editProjectId" name="project_id" required>
+                                <option value="">Chọn dự án</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="editJenkinsJob">Jenkins Job</label>
+                            <select id="editJenkinsJob" name="jenkins_job" required>
+                                <option value="">Vui lòng chọn dự án trước</option>
+                            </select>
+                        </div>
+                    </div>
                     <div class="form-row" style="grid-template-columns: 1fr; gap: 20px; margin-bottom: 20px;">
                         <div class="form-group">
                             <label for="editCicdDescription">Mô tả chi tiết về task</label>
@@ -557,10 +575,8 @@
                     </div>
                     <div class="form-row" style="grid-template-columns: 1fr; gap: 20px; margin-bottom: 20px;">
                         <div class="form-group">
-                            <label for="editJenkinsJob">Jenkins Job</label>
-                            <select id="editJenkinsJob" name="jenkins_job" required>
-                                <option value="">Đang tải danh sách jobs...</option>
-                            </select>
+                            <label for="editEmailRecipients">Email người nhận</label>
+                            <input type="text" id="editEmailRecipients" name="email_recipients" placeholder="email1@company.com, email2@company.com" style="font-size: 12px;">
                         </div>
                     </div>
                     <div class="form-actions" style="text-align: right;">
@@ -614,8 +630,45 @@
                 const projectId = this.value;
                 currentProjectId = projectId ? projectId : null;
                 loadCicdList();
+                // Load Jenkins jobs theo project
+                if (projectId) {
+                    loadJenkinsJobsByProject(projectId);
+                } else {
+                    resetJenkinsJobsDropdown();
+                }
             };
             loadCicdList();
+        }
+
+        async function loadJenkinsJobsByProject(projectId) {
+            const select = document.getElementById('jenkinsJob');
+            try {
+                select.innerHTML = '<option value="">Đang tải danh sách jobs...</option>';
+                select.disabled = true;
+                const res = await fetch(`/api/projects/jenkins/jobs/by-project/${projectId}`);
+                if (!res.ok) throw new Error('Lỗi tải jobs');
+                const data = await res.json();
+                if (!data.jobs || !data.jobs.length) {
+                    select.innerHTML = '<option value="">Không có Jenkins job nào cho dự án này</option>';
+                    select.disabled = true;
+                    return;
+                }
+                let options = '<option value="">-- Chọn Jenkins job --</option>';
+                data.jobs.forEach(job => {
+                    options += `<option value="${job.name}">${job.name}</option>`;
+                });
+                select.innerHTML = options;
+                select.disabled = false;
+            } catch (e) {
+                select.innerHTML = `<option value="">Không lấy được danh sách Jenkins jobs</option>`;
+                select.disabled = true;
+            }
+        }
+
+        function resetJenkinsJobsDropdown() {
+            const select = document.getElementById('jenkinsJob');
+            select.innerHTML = '<option value="">Vui lòng chọn dự án trước</option>';
+            select.disabled = true;
         }
 
         async function loadJenkinsJobs() {
@@ -656,13 +709,19 @@
                         <h3>🚀 Tất cả CI/CD</h3>
                         <p>Tổng số CI/CD: <span style="background: #667eea; color: white; padding: 4px 12px; border-radius: 20px; font-weight: 600;">${data.cicd.length}</span></p>
                     </div>
-                    <div style="overflow-x: auto;"><table class='executions-table'><thead><tr><th class="id-col">ID</th><th class="name-col">Tên CI/CD</th><th class="project-col">Project</th><th class="type-col">Loại</th><th class="description-col">Mô tả</th><th class="jenkins-col">Jenkins Job</th><th class="status-col">Trạng thái</th><th class="actions-col">Action</th></tr></thead><tbody>${data.cicd.map(item => {
+                    <div style="overflow-x: auto;"><table class='executions-table'><thead><tr><th class="id-col">ID</th><th class="name-col">Tên CI/CD</th><th class="project-col">Project</th><th class="type-col">Loại</th><th class="description-col">Mô tả</th><th class="jenkins-col">Jenkins Job</th><th class="email-col">Email người nhận</th><th class="status-col">Trạng thái</th><th class="actions-col">Action</th></tr></thead><tbody>${data.cicd.map(item => {
                     const isDeactive = item.status === 'deactive';
                     const stopButtonClass = isDeactive ? 'action-btn btn-stop disabled' : 'action-btn btn-stop';
                     const stopButtonDisabled = isDeactive ? 'disabled' : '';
                     const stopButtonOnclick = isDeactive ? '' : `onclick='stopCicd(${item.id})'`;
                     
-                    return `<tr><td class="id-col"><code style="background: #e8f5e8; color: #2e7d32; padding: 2px 6px; border-radius: 4px; font-size: 12px; font-weight: 600;">${item.cicd_id || item.id}</code></td><td class="name-col"><strong>${item.cicd_name}</strong></td><td class="project-col"><span style="background: #e3f2fd; color: #1976d2; padding: 4px 8px; border-radius: 12px; font-size: 12px; font-weight: 500;">${item.project_name || 'N/A'}</span></td><td class="type-col">${item.cicd_type}</td><td class="description-col">${item.description || '-'}</td><td class="jenkins-col"><code style="background: #f8f9fa; padding: 2px 6px; border-radius: 4px; font-size: 12px;">${item.jenkins_job || '-'}</code></td><td class="status-col"><span class="execution-status status-${item.status}">${getStatusText(item.status)}</span></td><td class="actions-col"><button class='action-btn btn-run' onclick='runCicd(${item.id})'>▶️ Chạy</button><button class='${stopButtonClass}' ${stopButtonDisabled} ${stopButtonOnclick}>⏹️ Dừng</button><button class='action-btn btn-edit' onclick='editCicd(${item.id})'>✏️ Sửa</button><button class='action-btn btn-delete' onclick='deleteCicd(${item.id})'>🗑️ Xóa</button></td></tr>`;
+                    return `<tr><td class="id-col"><code style="background: #e8f5e8; color: #2e7d32; padding: 2px 6px; border-radius: 4px; font-size: 12px; font-weight: 600;">${item.cicd_id || item.id}</code></td><td class="name-col"><strong>${item.cicd_name}</strong></td><td class="project-col"><span style="background: #e3f2fd; color: #1976d2; padding: 4px 8px; border-radius: 12px; font-size: 12px; font-weight: 500;">${item.project_name || 'N/A'}</span></td><td class="type-col">${item.cicd_type}</td><td class="description-col">${item.description || '-'}</td><td class="jenkins-col"><code style="background: #f8f9fa; padding: 2px 6px; border-radius: 4px; font-size: 12px;">${item.jenkins_job || '-'}</code></td><td class="email-col">
+                        ${item.email_recipients ? 
+                            `<span style="background: #fff3cd; color: #856404; padding: 2px 6px; border-radius: 4px; font-size: 11px; display: block; max-width: 200px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" title="${item.email_recipients}">📧 ${item.email_recipients.split(',')[0].trim()}${item.email_recipients.split(',').length > 1 ? ' +' + (item.email_recipients.split(',').length - 1) : ''}</span>` 
+                            : 
+                            '<span style="color: #6c757d; font-size: 11px;">-</span>'
+                        }
+                    </td><td class="status-col"><span class="execution-status status-${item.status}">${getStatusText(item.status)}</span></td><td class="actions-col"><button class='action-btn btn-run' onclick='runCicd(${item.id})'>▶️ Chạy</button><button class='${stopButtonClass}' ${stopButtonDisabled} ${stopButtonOnclick}>⏹️ Dừng</button><button class='action-btn btn-edit' onclick='editCicd(${item.id})'>✏️ Sửa</button><button class='action-btn btn-delete' onclick='deleteCicd(${item.id})'>🗑️ Xóa</button></td></tr>`;
                 }).join('')}</tbody></table></div>`;
             } catch (e) {
                 container.innerHTML = `<div class='empty-state'>Lỗi tải danh sách CI/CD: ${e.message}</div>`;
@@ -726,19 +785,65 @@
                 document.getElementById('editCicdName').value = cicd.cicd_name;
                 document.getElementById('editCicdType').value = cicd.cicd_type;
                 document.getElementById('editCicdDescription').value = cicd.description || '';
+                document.getElementById('editEmailRecipients').value = cicd.email_recipients || '';
                 
-                // Load Jenkins jobs cho dropdown
-                await loadJenkinsJobsForEdit();
+                // Điền project dropdown
+                const projectSelect = document.getElementById('editProjectId');
+                projectSelect.innerHTML = '<option value="">Chọn dự án</option>' +
+                    projects.map(p => `<option value="${p.id}" ${p.id == cicd.project_id ? 'selected' : ''}>${p.name}</option>`).join('');
                 
-                // Set selected Jenkins job
-                const editJenkinsJobSelect = document.getElementById('editJenkinsJob');
-                editJenkinsJobSelect.value = cicd.jenkins_job;
+                // Thêm event listener cho project dropdown trong modal edit
+                projectSelect.onchange = function() {
+                    const selectedProjectId = this.value;
+                    if (selectedProjectId) {
+                        // Load Jenkins jobs theo project được chọn
+                        loadJenkinsJobsForEditByProject(selectedProjectId, '');
+                    } else {
+                        // Reset Jenkins jobs dropdown nếu không chọn project
+                        const jenkinsJobSelect = document.getElementById('editJenkinsJob');
+                        jenkinsJobSelect.innerHTML = '<option value="">Vui lòng chọn dự án trước</option>';
+                        jenkinsJobSelect.disabled = true;
+                    }
+                };
+                
+                // Load Jenkins jobs theo project
+                loadJenkinsJobsForEditByProject(cicd.project_id, cicd.jenkins_job);
                 
                 // Hiển thị modal
                 document.getElementById('editModal').style.display = 'block';
                 
             } catch (error) {
                 alert(`❌ Lỗi mở form sửa CI/CD: ${error.message}`);
+            }
+        }
+
+        async function loadJenkinsJobsForEditByProject(projectId, selectedJob) {
+            const select = document.getElementById('editJenkinsJob');
+            try {
+                select.innerHTML = '<option value="">Đang tải danh sách jobs...</option>';
+                select.disabled = true;
+                const res = await fetch(`/api/projects/jenkins/jobs/by-project/${projectId}`);
+                if (!res.ok) throw new Error('Lỗi tải jobs');
+                const data = await res.json();
+                if (!data.jobs || !data.jobs.length) {
+                    select.innerHTML = '<option value="">Không có Jenkins job nào cho dự án này</option>';
+                    select.disabled = true;
+                    return;
+                }
+                let options = '<option value="">-- Chọn Jenkins job --</option>';
+                data.jobs.forEach(job => {
+                    options += `<option value="${job.name}">${job.name}</option>`;
+                });
+                // Nếu có selectedJob mà không nằm trong danh sách thì thêm vào đầu
+                if (selectedJob && !data.jobs.some(j => j.name === selectedJob)) {
+                    options = `<option value="${selectedJob}" selected>${selectedJob} (không có trong Jenkins)</option>` + options;
+                }
+                select.innerHTML = options;
+                if (selectedJob) select.value = selectedJob;
+                select.disabled = false;
+            } catch (e) {
+                select.innerHTML = `<option value="">Không lấy được danh sách Jenkins jobs</option>`;
+                select.disabled = true;
             }
         }
 
@@ -767,6 +872,12 @@
         function closeEditModal() {
             document.getElementById('editModal').style.display = 'none';
             document.getElementById('editCicdForm').reset();
+            
+            // Reset event listener cho project dropdown
+            const projectSelect = document.getElementById('editProjectId');
+            if (projectSelect) {
+                projectSelect.onchange = null;
+            }
         }
 
         // Đóng modal khi click bên ngoài
@@ -873,7 +984,8 @@
                 cicd_name: formData.get('cicd_name')?.trim(),
                 cicd_type: formData.get('cicd_type'),
                 description: formData.get('description')?.trim(),
-                jenkins_job: formData.get('jenkins_job')
+                jenkins_job: formData.get('jenkins_job'),
+                email_recipients: formData.get('email_recipients')?.trim() || ''
             };
             
             if (!data.cicd_name || !data.cicd_type || !data.jenkins_job) {
@@ -929,7 +1041,8 @@
                 cicd_type: formData.get('cicd_type'),
                 description: formData.get('description')?.trim(),
                 jenkins_job: formData.get('jenkins_job'),
-                project_id: currentProjectId
+                project_id: currentProjectId,
+                email_recipients: formData.get('email_recipients')?.trim() || ''
             };
             if (!data.cicd_name || !data.cicd_type || !data.jenkins_job) {
                 alert('Vui lòng điền đầy đủ thông tin!');
@@ -1022,7 +1135,8 @@
             checkAuth();
             
             loadProjects();
-            loadJenkinsJobs();
+            // Không load Jenkins jobs ngay từ đầu, chỉ khi chọn project
+            resetJenkinsJobsDropdown();
             // Không cần setTimeout(loadCicdList) nữa vì renderProjectOptions sẽ tự gọi
         });
     </script>

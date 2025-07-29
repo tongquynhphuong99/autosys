@@ -66,6 +66,7 @@ class Execution(Base):
     project_id = Column(Integer, nullable=False)
     jenkins_job = Column(String(200))
     status = Column(String(20), default="initialized")
+    email_recipients = Column(Text)
     created_at = Column(DateTime, default=datetime.utcnow)
 
 class Plan(Base):
@@ -79,6 +80,7 @@ class Plan(Base):
     jenkins_job = Column(String(200))
     schedule_time = Column(String(100), nullable=False)
     status = Column(String(20), default="initialized")
+    email_recipients = Column(Text)
     created_at = Column(DateTime, default=datetime.utcnow)
     
     # Relationship
@@ -134,6 +136,7 @@ class Cicd(Base):
     jenkins_job = Column(String(200))
     project_id = Column(Integer, nullable=False)
     status = Column(String(20), default="initialized")
+    email_recipients = Column(Text)
     created_at = Column(DateTime, default=datetime.utcnow)
 
 class Notification(Base):
@@ -149,6 +152,18 @@ class Notification(Base):
     is_read = Column(Boolean, default=False)  # Đã đọc chưa
     read_at = Column(DateTime)  # Thời gian đọc
     created_at = Column(DateTime, default=datetime.utcnow)  # Thời gian tạo
+
+class JenkinsJob(Base):
+    __tablename__ = "jenkins_jobs"
+    
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String(200), nullable=False)
+    project_id = Column(Integer, ForeignKey("projects.id"), nullable=False)
+    project_name = Column(String(200), nullable=False)
+    repository = Column(Text, nullable=False)
+    status = Column(String(20), default="active")
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 # Create tables
 def create_tables():

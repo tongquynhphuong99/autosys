@@ -532,6 +532,59 @@
             background: #f8f9fa;
         }
         
+        /* Pagination Styles */
+        .pagination {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 20px;
+            padding: 15px 0;
+            border-top: 1px solid #e0e0e0;
+        }
+        
+        .pagination-info {
+            font-size: 14px;
+            color: #666;
+            font-weight: 500;
+        }
+        
+        .pagination-controls {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        
+        .pagination-btn {
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            background: white;
+            color: #333;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.2s ease;
+            min-width: 40px;
+            text-align: center;
+        }
+        
+        .pagination-btn:hover {
+            background: #f8f9fa;
+            border-color: #667eea;
+            color: #667eea;
+        }
+        
+        .pagination-btn.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+        
+        .pagination-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
         @media (max-width: 768px) {
             .charts-grid {
                 grid-template-columns: 1fr;
@@ -691,6 +744,11 @@
         let trendsChart = null;
         let performanceChart = null;
         let projects = [];
+        
+        // Pagination variables for History Reports
+        let currentPage = 1;
+        let totalPages = 1;
+        let reportsPerPage = 10;
         
         // Load projects for filter
         async function loadProjectsForFilter() {
@@ -1662,7 +1720,7 @@
         }
         
         // History Reports Functions
-        async function loadHistoryReports() {
+        async function loadHistoryReports(page = 1) {
             const projectId = document.getElementById('historyProjectFilter').value;
             const taskType = document.getElementById('historyTaskTypeFilter').value;
             const startDate = document.getElementById('historyStartDate').value;
@@ -1677,12 +1735,16 @@
                 if (taskType) params.append('task_type', taskType);
                 if (startDate) params.append('start_date', startDate);
                 if (endDate) params.append('end_date', endDate);
-                params.append('limit', '200'); // Lấy nhiều hơn để có đủ dữ liệu
+                params.append('limit', reportsPerPage.toString());
+                params.append('offset', ((page - 1) * reportsPerPage).toString());
                 
                 const response = await fetch(`${REPORTS_API}/history-reports?${params}`);
                 if (response.ok) {
                     const data = await response.json();
+                    currentPage = page;
+                    totalPages = Math.ceil(data.total / reportsPerPage);
                     renderHistoryReportsTable(data.history_reports);
+                    renderPagination();
                 } else {
                     throw new Error('Failed to load history reports');
                 }
@@ -1763,12 +1825,71 @@
             tableContainer.innerHTML = table;
         }
         
+        // Render pagination controls
+        function renderPagination() {
+            const tableContainer = document.getElementById('historyReportsTable');
+            const existingPagination = tableContainer.querySelector('.pagination');
+            if (existingPagination) {
+                existingPagination.remove();
+            }
+            
+            if (totalPages <= 1) {
+                return; // Không hiển thị pagination nếu chỉ có 1 trang
+            }
+            
+            const pagination = document.createElement('div');
+            pagination.className = 'pagination';
+            
+            let paginationHTML = '<div class="pagination-info">';
+            paginationHTML += `Trang ${currentPage} / ${totalPages}`;
+            paginationHTML += '</div>';
+            
+            paginationHTML += '<div class="pagination-controls">';
+            
+            // Nút "Trang đầu"
+            if (currentPage > 1) {
+                paginationHTML += `<button class="pagination-btn" onclick="loadHistoryReports(1)" title="Trang đầu">⏮️</button>`;
+            }
+            
+            // Nút "Trước"
+            if (currentPage > 1) {
+                paginationHTML += `<button class="pagination-btn" onclick="loadHistoryReports(${currentPage - 1})" title="Trang trước">◀️</button>`;
+            }
+            
+            // Hiển thị các trang số
+            const startPage = Math.max(1, currentPage - 2);
+            const endPage = Math.min(totalPages, currentPage + 2);
+            
+            for (let i = startPage; i <= endPage; i++) {
+                if (i === currentPage) {
+                    paginationHTML += `<button class="pagination-btn active">${i}</button>`;
+                } else {
+                    paginationHTML += `<button class="pagination-btn" onclick="loadHistoryReports(${i})">${i}</button>`;
+                }
+            }
+            
+            // Nút "Sau"
+            if (currentPage < totalPages) {
+                paginationHTML += `<button class="pagination-btn" onclick="loadHistoryReports(${currentPage + 1})" title="Trang sau">▶️</button>`;
+            }
+            
+            // Nút "Trang cuối"
+            if (currentPage < totalPages) {
+                paginationHTML += `<button class="pagination-btn" onclick="loadHistoryReports(${totalPages})" title="Trang cuối">⏭️</button>`;
+            }
+            
+            paginationHTML += '</div>';
+            
+            pagination.innerHTML = paginationHTML;
+            tableContainer.appendChild(pagination);
+        }
+        
         function clearHistoryFilter() {
             document.getElementById('historyProjectFilter').value = '';
             document.getElementById('historyTaskTypeFilter').value = '';
             document.getElementById('historyStartDate').value = '';
             document.getElementById('historyEndDate').value = '';
-            loadHistoryReports();
+            loadHistoryReports(1); // Reset về trang 1
         }
         
         async function resetAllReports() {

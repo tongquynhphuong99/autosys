@@ -51,8 +51,14 @@ services:
       - DATABASE_URL=postgresql://testops_user:testops_password@postgres:5432/testops
       - JENKINS_URL=http://jenkins:8080
       - JENKINS_USER=admin
-      - JENKINS_TOKEN=admin
-      - NGROK_URL=https://291aefae24c2.ngrok-free.app
+      - JENKINS_PASS=admin
+      - NGROK_URL=https://35093a3f579d.ngrok-free.app
+      - EMAIL_SMTP_SERVER=smtp.gmail.com
+      - EMAIL_SMTP_PORT=587
+      - EMAIL_USERNAME=quynhphuongsusu@gmail.com
+      - EMAIL_PASSWORD=mdda cpdj gumi bxao
+      - EMAIL_FROM=TestOps <quynhphuongsusu@gmail.com>
+
 
     depends_on:
       postgres:
